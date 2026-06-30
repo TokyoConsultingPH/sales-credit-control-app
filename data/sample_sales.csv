@@ -1,0 +1,421 @@
+Date,Department,Client,Engagement,Manager,Invoiced,Received,DueDate,NextBillingDate,Status
+2025-01-26,Accounting,AgriHarvest Co.,ENG-1001,K. Reyes,455268.28,455268.28,2025-02-25,,Paid
+2026-03-09,Accounting,Sakura Foods Inc.,ENG-1002,K. Reyes,57798.3,57798.3,2026-04-08,,Paid
+2026-03-06,Tax,Nippon Steel PH,ENG-1003,J. Santos,163446.75,115183.41,2026-03-21,,Partial
+2025-10-12,Audit,Manila Logistics Corp.,ENG-1004,M. Yamada,0.0,0.0,2025-11-26,2026-07-04,Draft
+2025-09-28,Audit,TechBridge Solutions,ENG-1005,A. Tanaka,491991.83,0.0,2025-10-13,,Unpaid
+2025-10-28,Payroll,Sakura Foods Inc.,ENG-1006,R. Cruz,504466.61,368691.16,2025-11-27,,Partial
+2025-03-23,Audit,Pacific Garments,ENG-1007,R. Cruz,518977.92,0.0,2025-05-22,2026-07-20,Unpaid
+2025-12-30,Audit,Nippon Steel PH,ENG-1008,K. Reyes,157323.94,157323.94,2026-01-14,,Paid
+2025-06-17,Tax,Sakura Foods Inc.,ENG-1009,R. Cruz,298865.72,298865.72,2025-07-17,,Paid
+2025-11-20,Accounting,TechBridge Solutions,ENG-1010,J. Santos,264652.28,264652.28,2026-01-04,2026-07-11,Paid
+2025-09-29,Tax,TechBridge Solutions,ENG-1011,K. Reyes,118192.98,0.0,2025-11-13,,Unpaid
+2026-01-06,Advisory,Manila Logistics Corp.,ENG-1012,R. Cruz,0.0,0.0,2026-03-07,2026-06-13,Draft
+2026-03-09,Tax,Cebu Resorts Group,ENG-1013,A. Tanaka,373989.06,373989.06,2026-05-08,,Paid
+2025-10-01,Accounting,Yamato Trading,ENG-1014,A. Tanaka,470415.29,470415.29,2025-11-15,,Paid
+2026-05-28,Audit,GreenField Realty,ENG-1015,K. Reyes,466698.83,466698.83,2026-06-12,,Paid
+2025-07-23,Payroll,Yamato Trading,ENG-1016,A. Tanaka,125589.99,0.0,2025-08-07,,Unpaid
+2026-01-07,Accounting,Metro Pharma,ENG-1017,A. Tanaka,532084.25,0.0,2026-02-21,2026-06-25,Unpaid
+2026-05-13,Accounting,Cebu Resorts Group,ENG-1018,R. Cruz,0.0,0.0,2026-06-12,2026-07-10,Draft
+2026-06-25,Audit,Sunrise Motors,ENG-1019,R. Cruz,528562.5,528562.5,2026-07-25,,Paid
+2026-02-13,Audit,Manila Logistics Corp.,ENG-1020,M. Yamada,597283.64,310020.1,2026-04-14,2026-06-24,Partial
+2025-08-24,Accounting,Sakura Foods Inc.,ENG-1021,M. Yamada,369526.46,369526.46,2025-09-08,2026-08-06,Paid
+2026-06-11,Accounting,Metro Pharma,ENG-1022,K. Reyes,173282.6,70546.54,2026-07-11,,Partial
+2025-09-06,Advisory,TechBridge Solutions,ENG-1023,M. Yamada,479386.88,0.0,2025-10-06,2026-07-22,Unpaid
+2026-02-25,Advisory,Pacific Garments,ENG-1024,A. Tanaka,301533.81,0.0,2026-03-12,2026-07-26,Unpaid
+2025-07-16,Tax,BPO Global,ENG-1025,A. Tanaka,146516.99,146516.99,2025-09-14,2026-07-09,Paid
+2025-04-11,Advisory,BPO Global,ENG-1026,R. Cruz,0.0,0.0,2025-04-26,,Draft
+2026-05-13,Advisory,TechBridge Solutions,ENG-1027,M. Yamada,309560.71,0.0,2026-05-28,2026-06-10,Unpaid
+2025-10-20,Advisory,BPO Global,ENG-1028,A. Tanaka,0.0,0.0,2025-12-19,2026-06-28,Draft
+2025-03-04,Payroll,Cebu Resorts Group,ENG-1029,R. Cruz,458866.31,458866.31,2025-05-03,,Paid
+2026-06-05,Accounting,BPO Global,ENG-1030,J. Santos,84862.42,84862.42,2026-06-20,,Paid
+2025-09-10,Accounting,Metro Pharma,ENG-1031,K. Reyes,364194.67,364194.67,2025-09-25,,Paid
+2025-11-20,Payroll,Nippon Steel PH,ENG-1032,M. Yamada,563435.5,563435.5,2026-01-04,2026-07-05,Paid
+2025-11-20,Advisory,Metro Pharma,ENG-1033,A. Tanaka,0.0,0.0,2025-12-05,,Draft
+2025-08-07,Accounting,BPO Global,ENG-1034,M. Yamada,323295.43,323295.43,2025-09-21,,Paid
+2025-06-11,Audit,AgriHarvest Co.,ENG-1035,K. Reyes,285383.36,285383.36,2025-07-26,,Paid
+2025-11-03,Accounting,Manila Logistics Corp.,ENG-1036,K. Reyes,561783.38,561783.38,2025-12-03,2026-08-05,Paid
+2025-10-06,Tax,GreenField Realty,ENG-1037,K. Reyes,197783.51,197783.51,2025-11-20,2026-07-20,Paid
+2025-09-15,Advisory,GreenField Realty,ENG-1038,A. Tanaka,546988.44,0.0,2025-09-30,,Unpaid
+2025-12-08,Accounting,TechBridge Solutions,ENG-1039,K. Reyes,471826.76,203346.78,2026-02-06,,Partial
+2025-04-25,Accounting,Pacific Garments,ENG-1040,K. Reyes,82136.56,0.0,2025-05-25,,Unpaid
+2025-06-01,Payroll,Sakura Foods Inc.,ENG-1041,M. Yamada,280680.56,280680.56,2025-07-16,,Paid
+2025-09-13,Tax,Sunrise Motors,ENG-1042,R. Cruz,413482.71,413482.71,2025-11-12,,Paid
+2025-06-16,Tax,Pacific Garments,ENG-1043,J. Santos,586675.38,0.0,2025-08-15,2026-07-27,Unpaid
+2025-10-01,Tax,Yamato Trading,ENG-1044,R. Cruz,129150.79,0.0,2025-11-30,,Unpaid
+2026-04-17,Tax,BPO Global,ENG-1045,J. Santos,235808.72,0.0,2026-05-17,2026-07-22,Unpaid
+2025-10-13,Audit,TechBridge Solutions,ENG-1046,K. Reyes,0.0,0.0,2025-11-27,2026-07-12,Draft
+2025-01-29,Audit,GreenField Realty,ENG-1047,A. Tanaka,0.0,0.0,2025-02-28,,Draft
+2026-03-21,Accounting,Cebu Resorts Group,ENG-1048,A. Tanaka,233584.78,0.0,2026-05-20,,Unpaid
+2025-07-14,Advisory,Cebu Resorts Group,ENG-1049,R. Cruz,182644.6,0.0,2025-07-29,,Unpaid
+2026-03-18,Audit,Manila Logistics Corp.,ENG-1050,M. Yamada,79185.33,36829.1,2026-05-02,,Partial
+2025-11-13,Payroll,BPO Global,ENG-1051,J. Santos,413460.03,413460.03,2025-12-28,,Paid
+2025-06-28,Advisory,TechBridge Solutions,ENG-1052,K. Reyes,384688.35,384688.35,2025-07-13,2026-06-23,Paid
+2025-11-26,Payroll,Sunrise Motors,ENG-1053,R. Cruz,300393.39,300393.39,2025-12-26,,Paid
+2025-10-18,Accounting,BPO Global,ENG-1054,R. Cruz,328653.13,153676.27,2025-11-17,,Partial
+2025-01-26,Tax,AgriHarvest Co.,ENG-1055,K. Reyes,0.0,0.0,2025-02-10,,Draft
+2026-01-29,Tax,Manila Logistics Corp.,ENG-1056,J. Santos,316851.21,316851.21,2026-02-13,,Paid
+2025-06-30,Tax,Manila Logistics Corp.,ENG-1057,J. Santos,490301.52,260975.21,2025-07-30,,Partial
+2026-04-21,Tax,Yamato Trading,ENG-1058,K. Reyes,0.0,0.0,2026-06-05,,Draft
+2026-03-13,Payroll,Yamato Trading,ENG-1059,J. Santos,505118.74,505118.74,2026-04-12,,Paid
+2025-09-11,Audit,GreenField Realty,ENG-1060,J. Santos,510323.22,510323.22,2025-11-10,,Paid
+2025-10-20,Accounting,TechBridge Solutions,ENG-1061,R. Cruz,171316.4,171316.4,2025-11-04,2026-06-24,Paid
+2025-03-07,Tax,BPO Global,ENG-1062,J. Santos,272326.02,272326.02,2025-05-06,,Paid
+2025-01-21,Advisory,Pacific Garments,ENG-1063,M. Yamada,519769.94,0.0,2025-03-22,,Unpaid
+2026-03-06,Advisory,GreenField Realty,ENG-1064,J. Santos,341403.52,0.0,2026-04-05,,Unpaid
+2025-01-30,Advisory,Nippon Steel PH,ENG-1065,K. Reyes,257760.03,180192.6,2025-03-01,,Partial
+2025-01-28,Payroll,Nippon Steel PH,ENG-1066,J. Santos,547880.16,345986.25,2025-02-12,,Partial
+2025-02-21,Tax,TechBridge Solutions,ENG-1067,M. Yamada,185687.54,185687.54,2025-04-22,2026-07-28,Paid
+2025-09-16,Advisory,Pacific Garments,ENG-1068,R. Cruz,507550.11,507550.11,2025-10-01,,Paid
+2025-02-11,Accounting,Metro Pharma,ENG-1069,R. Cruz,0.0,0.0,2025-03-13,,Draft
+2025-05-10,Tax,GreenField Realty,ENG-1070,M. Yamada,305194.19,305194.19,2025-06-09,,Paid
+2025-04-28,Tax,GreenField Realty,ENG-1071,K. Reyes,475563.46,475563.46,2025-06-12,2026-06-11,Paid
+2026-02-11,Advisory,GreenField Realty,ENG-1072,K. Reyes,567223.54,567223.54,2026-03-13,2026-07-29,Paid
+2025-02-12,Accounting,Pacific Garments,ENG-1073,A. Tanaka,234434.11,234434.11,2025-03-29,2026-07-21,Paid
+2026-05-17,Advisory,TechBridge Solutions,ENG-1074,R. Cruz,0.0,0.0,2026-07-16,,Draft
+2025-10-04,Payroll,Sunrise Motors,ENG-1075,K. Reyes,384910.92,0.0,2025-12-03,,Unpaid
+2025-11-27,Audit,BPO Global,ENG-1076,J. Santos,516959.37,0.0,2025-12-12,2026-07-08,Unpaid
+2026-01-24,Payroll,Pacific Garments,ENG-1077,M. Yamada,228382.11,228382.11,2026-03-10,2026-06-23,Paid
+2025-10-14,Audit,Cebu Resorts Group,ENG-1078,R. Cruz,532979.19,0.0,2025-11-28,,Unpaid
+2025-09-05,Accounting,AgriHarvest Co.,ENG-1079,J. Santos,443241.81,443241.81,2025-10-05,,Paid
+2025-01-18,Advisory,Pacific Garments,ENG-1080,J. Santos,92109.88,92109.88,2025-02-17,2026-07-17,Paid
+2026-06-28,Payroll,GreenField Realty,ENG-1081,M. Yamada,0.0,0.0,2026-08-12,2026-07-09,Draft
+2025-08-25,Audit,Sunrise Motors,ENG-1082,R. Cruz,107567.3,107567.3,2025-09-09,,Paid
+2025-08-10,Tax,BPO Global,ENG-1083,M. Yamada,453618.61,453618.61,2025-09-24,,Paid
+2026-01-05,Tax,Cebu Resorts Group,ENG-1084,M. Yamada,140487.26,140487.26,2026-02-04,2026-06-13,Paid
+2026-05-18,Tax,Yamato Trading,ENG-1085,M. Yamada,97449.08,97449.08,2026-07-02,,Paid
+2025-02-22,Tax,TechBridge Solutions,ENG-1086,J. Santos,181387.9,0.0,2025-03-09,,Unpaid
+2025-02-24,Accounting,Manila Logistics Corp.,ENG-1087,K. Reyes,124967.12,0.0,2025-04-10,2026-06-25,Unpaid
+2025-08-20,Advisory,TechBridge Solutions,ENG-1088,M. Yamada,474388.38,474388.38,2025-10-19,2026-07-17,Paid
+2025-03-03,Payroll,GreenField Realty,ENG-1089,A. Tanaka,381393.31,0.0,2025-04-02,,Unpaid
+2025-09-03,Tax,Sunrise Motors,ENG-1090,K. Reyes,137335.59,137335.59,2025-09-18,,Paid
+2025-10-26,Advisory,Yamato Trading,ENG-1091,A. Tanaka,58278.32,58278.32,2025-12-10,,Paid
+2025-09-28,Tax,Cebu Resorts Group,ENG-1092,R. Cruz,481183.69,303430.36,2025-10-28,,Partial
+2025-09-30,Tax,Metro Pharma,ENG-1093,K. Reyes,502913.45,502913.45,2025-10-30,,Paid
+2026-03-26,Audit,Yamato Trading,ENG-1094,J. Santos,109638.05,71250.13,2026-05-10,,Partial
+2025-02-10,Accounting,AgriHarvest Co.,ENG-1095,K. Reyes,538076.82,0.0,2025-03-27,2026-06-24,Unpaid
+2025-01-22,Payroll,Nippon Steel PH,ENG-1096,J. Santos,599760.55,260749.21,2025-02-06,,Partial
+2026-03-29,Payroll,Yamato Trading,ENG-1097,A. Tanaka,553000.76,553000.76,2026-05-28,,Paid
+2025-12-23,Advisory,Pacific Garments,ENG-1098,J. Santos,268674.93,268674.93,2026-01-07,,Paid
+2025-10-23,Advisory,Pacific Garments,ENG-1099,M. Yamada,411046.78,411046.78,2025-11-07,,Paid
+2025-04-29,Audit,Cebu Resorts Group,ENG-1100,J. Santos,583303.45,583303.45,2025-05-14,,Paid
+2025-02-25,Advisory,Sakura Foods Inc.,ENG-1101,R. Cruz,145046.22,145046.22,2025-04-26,,Paid
+2025-05-15,Audit,Metro Pharma,ENG-1102,R. Cruz,559496.75,559496.75,2025-07-14,2026-07-20,Paid
+2025-11-15,Tax,Manila Logistics Corp.,ENG-1103,R. Cruz,348469.84,120781.25,2025-11-30,,Partial
+2025-10-26,Advisory,BPO Global,ENG-1104,J. Santos,324968.33,324968.33,2025-12-25,,Paid
+2025-05-29,Payroll,GreenField Realty,ENG-1105,J. Santos,0.0,0.0,2025-06-28,,Draft
+2026-06-04,Audit,Metro Pharma,ENG-1106,J. Santos,189616.69,189616.69,2026-07-19,,Paid
+2026-04-03,Tax,Pacific Garments,ENG-1107,R. Cruz,341605.12,341605.12,2026-06-02,,Paid
+2026-01-28,Tax,Sunrise Motors,ENG-1108,J. Santos,170794.97,0.0,2026-02-12,2026-07-10,Unpaid
+2025-06-05,Advisory,Yamato Trading,ENG-1109,A. Tanaka,317384.04,317384.04,2025-07-20,,Paid
+2026-04-13,Payroll,GreenField Realty,ENG-1110,M. Yamada,48594.65,48594.65,2026-05-13,2026-07-30,Paid
+2026-02-12,Payroll,AgriHarvest Co.,ENG-1111,J. Santos,403908.53,0.0,2026-04-13,,Unpaid
+2025-02-06,Payroll,Sunrise Motors,ENG-1112,A. Tanaka,385777.3,385777.3,2025-03-23,,Paid
+2025-04-11,Advisory,Sunrise Motors,ENG-1113,M. Yamada,465807.03,0.0,2025-04-26,,Unpaid
+2025-02-17,Accounting,BPO Global,ENG-1114,K. Reyes,221649.81,221649.81,2025-04-03,2026-06-19,Paid
+2025-07-04,Advisory,BPO Global,ENG-1115,J. Santos,135190.84,135190.84,2025-09-02,,Paid
+2025-05-27,Payroll,Yamato Trading,ENG-1116,M. Yamada,170025.53,90077.02,2025-06-11,,Partial
+2025-06-11,Payroll,TechBridge Solutions,ENG-1117,M. Yamada,0.0,0.0,2025-07-26,,Draft
+2025-11-06,Advisory,Metro Pharma,ENG-1118,M. Yamada,151561.52,151561.52,2026-01-05,2026-07-04,Paid
+2025-10-30,Payroll,AgriHarvest Co.,ENG-1119,A. Tanaka,595907.54,595907.54,2025-12-29,2026-07-16,Paid
+2026-05-24,Payroll,Pacific Garments,ENG-1120,R. Cruz,506389.78,0.0,2026-06-23,,Unpaid
+2025-09-14,Tax,AgriHarvest Co.,ENG-1121,A. Tanaka,419548.1,0.0,2025-10-14,,Unpaid
+2026-03-28,Audit,Pacific Garments,ENG-1122,J. Santos,58684.14,58684.14,2026-04-27,2026-06-28,Paid
+2025-07-25,Tax,GreenField Realty,ENG-1123,R. Cruz,114009.49,114009.49,2025-09-08,,Paid
+2026-05-09,Audit,Yamato Trading,ENG-1124,A. Tanaka,581735.08,581735.08,2026-06-23,,Paid
+2025-08-20,Tax,Cebu Resorts Group,ENG-1125,M. Yamada,521678.73,0.0,2025-10-19,,Unpaid
+2026-02-09,Accounting,AgriHarvest Co.,ENG-1126,M. Yamada,47794.45,47794.45,2026-04-10,2026-07-27,Paid
+2026-01-26,Payroll,Yamato Trading,ENG-1127,A. Tanaka,0.0,0.0,2026-02-10,,Draft
+2025-12-02,Payroll,Yamato Trading,ENG-1128,M. Yamada,552543.31,552543.31,2025-12-17,,Paid
+2025-04-30,Advisory,Manila Logistics Corp.,ENG-1129,A. Tanaka,0.0,0.0,2025-06-14,,Draft
+2025-05-19,Tax,Sunrise Motors,ENG-1130,R. Cruz,257641.67,257641.67,2025-07-18,,Paid
+2025-04-12,Advisory,BPO Global,ENG-1131,J. Santos,506868.13,390048.47,2025-05-27,2026-07-03,Partial
+2025-08-30,Advisory,AgriHarvest Co.,ENG-1132,M. Yamada,519052.11,519052.11,2025-10-14,,Paid
+2026-02-12,Accounting,AgriHarvest Co.,ENG-1133,K. Reyes,0.0,0.0,2026-04-13,2026-06-23,Draft
+2025-02-21,Accounting,BPO Global,ENG-1134,A. Tanaka,480604.97,480604.97,2025-03-23,,Paid
+2025-08-01,Payroll,Metro Pharma,ENG-1135,A. Tanaka,368374.53,0.0,2025-08-31,2026-06-19,Unpaid
+2025-05-29,Audit,Sakura Foods Inc.,ENG-1136,R. Cruz,593015.29,593015.29,2025-06-28,2026-08-04,Paid
+2026-01-02,Accounting,Sakura Foods Inc.,ENG-1137,R. Cruz,482391.41,482391.41,2026-02-16,2026-06-26,Paid
+2026-06-23,Advisory,Cebu Resorts Group,ENG-1138,K. Reyes,103643.61,103643.61,2026-08-22,,Paid
+2026-04-08,Accounting,AgriHarvest Co.,ENG-1139,K. Reyes,0.0,0.0,2026-04-23,,Draft
+2026-04-15,Audit,TechBridge Solutions,ENG-1140,A. Tanaka,400270.78,400270.78,2026-06-14,,Paid
+2026-03-31,Advisory,Metro Pharma,ENG-1141,K. Reyes,81154.8,81154.8,2026-04-30,2026-06-27,Paid
+2025-11-29,Payroll,Manila Logistics Corp.,ENG-1142,K. Reyes,253306.46,113341.69,2026-01-28,2026-07-24,Partial
+2026-03-17,Tax,TechBridge Solutions,ENG-1143,J. Santos,292870.75,292870.75,2026-05-01,,Paid
+2025-11-17,Accounting,Yamato Trading,ENG-1144,A. Tanaka,278987.84,135909.07,2025-12-17,,Partial
+2025-03-29,Accounting,Cebu Resorts Group,ENG-1145,A. Tanaka,92208.86,92208.86,2025-05-13,,Paid
+2025-12-04,Payroll,Sunrise Motors,ENG-1146,A. Tanaka,415207.43,415207.43,2026-02-02,,Paid
+2025-11-16,Audit,Pacific Garments,ENG-1147,K. Reyes,236921.86,96277.79,2026-01-15,2026-06-16,Partial
+2025-04-28,Audit,AgriHarvest Co.,ENG-1148,M. Yamada,467059.15,328627.81,2025-05-13,,Partial
+2025-07-04,Accounting,Nippon Steel PH,ENG-1149,K. Reyes,193031.42,0.0,2025-08-18,2026-06-21,Unpaid
+2025-03-13,Advisory,Pacific Garments,ENG-1150,R. Cruz,119449.81,37665.94,2025-04-12,2026-07-09,Partial
+2025-11-16,Audit,Nippon Steel PH,ENG-1151,R. Cruz,444093.74,0.0,2025-12-01,,Unpaid
+2025-02-20,Payroll,Yamato Trading,ENG-1152,J. Santos,417422.48,417422.48,2025-04-21,,Paid
+2025-08-09,Audit,AgriHarvest Co.,ENG-1153,K. Reyes,462768.16,462768.16,2025-10-08,2026-07-23,Paid
+2026-06-24,Advisory,Sakura Foods Inc.,ENG-1154,A. Tanaka,413594.23,413594.23,2026-08-23,,Paid
+2025-11-05,Tax,Sakura Foods Inc.,ENG-1155,J. Santos,569381.49,0.0,2025-12-20,2026-06-17,Unpaid
+2025-06-29,Advisory,AgriHarvest Co.,ENG-1156,M. Yamada,112343.99,112343.99,2025-07-29,,Paid
+2026-02-11,Accounting,Manila Logistics Corp.,ENG-1157,M. Yamada,522588.04,522588.04,2026-02-26,,Paid
+2026-03-16,Payroll,Sakura Foods Inc.,ENG-1158,M. Yamada,361103.82,0.0,2026-05-15,2026-07-05,Unpaid
+2026-04-17,Tax,Manila Logistics Corp.,ENG-1159,R. Cruz,505934.51,0.0,2026-05-02,,Unpaid
+2026-02-15,Advisory,BPO Global,ENG-1160,M. Yamada,333419.02,333419.02,2026-04-01,,Paid
+2025-03-20,Tax,Pacific Garments,ENG-1161,M. Yamada,325870.64,325870.64,2025-04-19,,Paid
+2025-08-30,Tax,AgriHarvest Co.,ENG-1162,A. Tanaka,97570.54,97570.54,2025-09-29,,Paid
+2026-05-21,Tax,AgriHarvest Co.,ENG-1163,M. Yamada,299813.72,176810.36,2026-07-05,,Partial
+2026-03-27,Tax,Metro Pharma,ENG-1164,A. Tanaka,78240.3,78240.3,2026-05-11,,Paid
+2026-06-04,Audit,GreenField Realty,ENG-1165,A. Tanaka,81546.77,81546.77,2026-06-19,2026-08-02,Paid
+2026-06-04,Accounting,Metro Pharma,ENG-1166,R. Cruz,255310.19,198405.57,2026-06-19,,Partial
+2026-05-03,Audit,Pacific Garments,ENG-1167,A. Tanaka,0.0,0.0,2026-07-02,2026-08-06,Draft
+2025-06-26,Payroll,Metro Pharma,ENG-1168,R. Cruz,61919.59,0.0,2025-08-25,,Unpaid
+2026-01-17,Audit,Sakura Foods Inc.,ENG-1169,M. Yamada,554044.6,554044.6,2026-03-03,,Paid
+2025-12-04,Accounting,AgriHarvest Co.,ENG-1170,R. Cruz,92923.33,41078.94,2026-01-03,2026-07-17,Partial
+2025-11-14,Audit,AgriHarvest Co.,ENG-1171,M. Yamada,581910.04,288615.16,2025-11-29,2026-07-04,Partial
+2026-06-24,Tax,BPO Global,ENG-1172,M. Yamada,92333.66,51175.4,2026-07-09,2026-06-21,Partial
+2025-07-16,Advisory,Manila Logistics Corp.,ENG-1173,K. Reyes,166864.11,166864.11,2025-07-31,2026-07-30,Paid
+2026-06-24,Payroll,Nippon Steel PH,ENG-1174,R. Cruz,61138.6,61138.6,2026-07-24,,Paid
+2025-06-19,Tax,BPO Global,ENG-1175,J. Santos,443862.48,443862.48,2025-08-03,,Paid
+2025-10-19,Payroll,GreenField Realty,ENG-1176,J. Santos,461339.05,0.0,2025-11-18,,Unpaid
+2026-01-12,Tax,Cebu Resorts Group,ENG-1177,K. Reyes,419851.82,218448.36,2026-02-26,,Partial
+2025-06-15,Advisory,Sakura Foods Inc.,ENG-1178,J. Santos,497459.09,0.0,2025-07-15,,Unpaid
+2025-04-16,Audit,Nippon Steel PH,ENG-1179,M. Yamada,438384.55,438384.55,2025-05-01,2026-07-28,Paid
+2026-06-10,Advisory,Pacific Garments,ENG-1180,A. Tanaka,122515.25,122515.25,2026-07-10,,Paid
+2025-02-24,Advisory,Pacific Garments,ENG-1181,R. Cruz,262014.22,262014.22,2025-04-25,,Paid
+2025-11-23,Accounting,Nippon Steel PH,ENG-1182,A. Tanaka,561262.51,0.0,2026-01-07,,Unpaid
+2026-04-29,Audit,Sakura Foods Inc.,ENG-1183,A. Tanaka,429800.31,429800.31,2026-06-28,,Paid
+2025-09-20,Accounting,BPO Global,ENG-1184,M. Yamada,160766.66,160766.66,2025-11-19,2026-06-28,Paid
+2025-02-18,Accounting,Yamato Trading,ENG-1185,K. Reyes,173526.12,106094.79,2025-03-05,2026-08-06,Partial
+2025-01-17,Payroll,Metro Pharma,ENG-1186,M. Yamada,393894.77,259683.86,2025-03-03,,Partial
+2026-03-03,Tax,Cebu Resorts Group,ENG-1187,K. Reyes,144895.79,81394.09,2026-04-17,2026-07-13,Partial
+2025-01-21,Payroll,GreenField Realty,ENG-1188,A. Tanaka,258654.09,258654.09,2025-03-22,,Paid
+2025-03-11,Audit,Sunrise Motors,ENG-1189,M. Yamada,233089.4,0.0,2025-03-26,,Unpaid
+2025-02-15,Tax,AgriHarvest Co.,ENG-1190,J. Santos,237287.47,237287.47,2025-03-17,,Paid
+2025-07-06,Advisory,Sakura Foods Inc.,ENG-1191,R. Cruz,494438.7,494438.7,2025-09-04,2026-06-22,Paid
+2025-11-20,Accounting,AgriHarvest Co.,ENG-1192,R. Cruz,562687.75,562687.75,2026-01-19,2026-07-28,Paid
+2026-01-01,Audit,Pacific Garments,ENG-1193,J. Santos,522797.58,522797.58,2026-02-15,2026-07-31,Paid
+2026-03-27,Advisory,Yamato Trading,ENG-1194,M. Yamada,540997.0,540997.0,2026-04-26,,Paid
+2025-10-01,Payroll,Nippon Steel PH,ENG-1195,K. Reyes,488642.93,0.0,2025-10-16,,Unpaid
+2025-11-25,Audit,Sunrise Motors,ENG-1196,J. Santos,97454.83,97454.83,2026-01-09,2026-07-18,Paid
+2026-03-31,Tax,TechBridge Solutions,ENG-1197,M. Yamada,236866.31,236866.31,2026-05-15,,Paid
+2025-03-18,Accounting,Nippon Steel PH,ENG-1198,K. Reyes,415862.98,415862.98,2025-04-17,,Paid
+2025-02-05,Advisory,Metro Pharma,ENG-1199,A. Tanaka,110688.81,110688.81,2025-03-22,2026-08-09,Paid
+2025-06-07,Payroll,Manila Logistics Corp.,ENG-1200,K. Reyes,0.0,0.0,2025-07-22,,Draft
+2026-06-27,Tax,Sakura Foods Inc.,ENG-1201,R. Cruz,245491.97,245491.97,2026-08-11,2026-06-17,Paid
+2026-06-15,Advisory,BPO Global,ENG-1202,K. Reyes,256712.93,110614.61,2026-07-30,,Partial
+2026-05-18,Audit,Sunrise Motors,ENG-1203,J. Santos,152099.87,152099.87,2026-06-02,,Paid
+2025-11-24,Accounting,Nippon Steel PH,ENG-1204,R. Cruz,413990.28,0.0,2026-01-08,,Unpaid
+2026-06-05,Audit,Sakura Foods Inc.,ENG-1205,M. Yamada,0.0,0.0,2026-07-05,2026-07-11,Draft
+2026-01-13,Payroll,Manila Logistics Corp.,ENG-1206,A. Tanaka,0.0,0.0,2026-02-12,,Draft
+2026-02-12,Audit,Metro Pharma,ENG-1207,A. Tanaka,599773.22,0.0,2026-04-13,,Unpaid
+2025-11-21,Tax,Cebu Resorts Group,ENG-1208,K. Reyes,399709.61,399709.61,2026-01-05,2026-08-02,Paid
+2025-05-13,Tax,Cebu Resorts Group,ENG-1209,R. Cruz,282266.24,0.0,2025-05-28,,Unpaid
+2025-06-18,Audit,Cebu Resorts Group,ENG-1210,M. Yamada,0.0,0.0,2025-07-18,2026-08-09,Draft
+2025-09-14,Accounting,Metro Pharma,ENG-1211,K. Reyes,0.0,0.0,2025-10-29,2026-06-29,Draft
+2026-05-30,Accounting,Sunrise Motors,ENG-1212,K. Reyes,398952.96,235511.21,2026-06-29,,Partial
+2025-02-12,Audit,Metro Pharma,ENG-1213,M. Yamada,502132.31,502132.31,2025-02-27,,Paid
+2026-03-03,Tax,GreenField Realty,ENG-1214,J. Santos,386140.72,386140.72,2026-04-17,,Paid
+2026-02-20,Tax,Yamato Trading,ENG-1215,J. Santos,206562.97,206562.97,2026-03-07,2026-07-06,Paid
+2025-12-15,Tax,Pacific Garments,ENG-1216,J. Santos,379729.75,379729.75,2026-01-29,,Paid
+2026-01-15,Tax,GreenField Realty,ENG-1217,J. Santos,328388.88,328388.88,2026-02-14,,Paid
+2025-05-25,Tax,TechBridge Solutions,ENG-1218,R. Cruz,94214.53,94214.53,2025-07-24,,Paid
+2025-12-02,Tax,Yamato Trading,ENG-1219,K. Reyes,562900.86,0.0,2026-01-01,,Unpaid
+2026-05-26,Advisory,Cebu Resorts Group,ENG-1220,J. Santos,532282.37,532282.37,2026-06-10,,Paid
+2025-08-09,Tax,AgriHarvest Co.,ENG-1221,J. Santos,366672.7,366672.7,2025-09-23,,Paid
+2025-01-09,Audit,TechBridge Solutions,ENG-1222,M. Yamada,514416.52,514416.52,2025-02-23,,Paid
+2026-02-15,Accounting,Yamato Trading,ENG-1223,K. Reyes,68648.3,33037.81,2026-04-01,2026-07-12,Partial
+2025-05-02,Audit,Pacific Garments,ENG-1224,K. Reyes,112051.5,112051.5,2025-06-16,,Paid
+2025-05-28,Audit,Sunrise Motors,ENG-1225,M. Yamada,151472.41,151472.41,2025-06-12,2026-06-18,Paid
+2026-06-16,Advisory,Pacific Garments,ENG-1226,R. Cruz,295913.59,165046.65,2026-07-31,,Partial
+2025-11-03,Advisory,GreenField Realty,ENG-1227,J. Santos,372485.81,372485.81,2026-01-02,,Paid
+2026-01-13,Accounting,Sunrise Motors,ENG-1228,A. Tanaka,225494.17,225494.17,2026-03-14,,Paid
+2026-05-01,Payroll,Metro Pharma,ENG-1229,J. Santos,188697.04,148321.24,2026-05-31,,Partial
+2026-06-21,Tax,BPO Global,ENG-1230,A. Tanaka,392254.14,282651.89,2026-07-21,,Partial
+2025-04-23,Payroll,BPO Global,ENG-1231,J. Santos,146839.22,146839.22,2025-06-22,2026-07-24,Paid
+2026-04-28,Payroll,Cebu Resorts Group,ENG-1232,R. Cruz,528777.92,0.0,2026-05-13,,Unpaid
+2025-11-29,Payroll,Yamato Trading,ENG-1233,K. Reyes,598948.81,598948.81,2026-01-28,2026-06-21,Paid
+2025-12-29,Audit,BPO Global,ENG-1234,R. Cruz,418486.4,0.0,2026-02-12,,Unpaid
+2025-11-02,Audit,Sunrise Motors,ENG-1235,R. Cruz,0.0,0.0,2025-12-17,,Draft
+2025-11-21,Advisory,AgriHarvest Co.,ENG-1236,K. Reyes,308689.92,236840.09,2026-01-05,2026-07-16,Partial
+2026-02-09,Advisory,Sunrise Motors,ENG-1237,A. Tanaka,0.0,0.0,2026-03-11,2026-06-28,Draft
+2026-03-29,Audit,GreenField Realty,ENG-1238,K. Reyes,407344.35,0.0,2026-04-28,2026-07-14,Unpaid
+2025-05-21,Audit,Cebu Resorts Group,ENG-1239,R. Cruz,101166.89,0.0,2025-06-20,2026-07-22,Unpaid
+2025-02-23,Tax,Nippon Steel PH,ENG-1240,A. Tanaka,96110.86,96110.86,2025-04-24,2026-07-29,Paid
+2025-06-11,Payroll,BPO Global,ENG-1241,M. Yamada,0.0,0.0,2025-08-10,,Draft
+2025-10-20,Audit,BPO Global,ENG-1242,K. Reyes,401702.83,0.0,2025-11-04,,Unpaid
+2025-06-29,Accounting,TechBridge Solutions,ENG-1243,J. Santos,274015.59,0.0,2025-07-14,,Unpaid
+2025-10-24,Tax,Pacific Garments,ENG-1244,M. Yamada,530976.17,530976.17,2025-11-08,,Paid
+2026-06-21,Advisory,Manila Logistics Corp.,ENG-1245,M. Yamada,0.0,0.0,2026-08-20,2026-07-31,Draft
+2026-04-15,Tax,GreenField Realty,ENG-1246,K. Reyes,403039.79,0.0,2026-04-30,,Unpaid
+2025-06-29,Tax,Manila Logistics Corp.,ENG-1247,J. Santos,382134.52,192116.29,2025-08-28,,Partial
+2025-07-09,Accounting,BPO Global,ENG-1248,J. Santos,589743.71,589743.71,2025-08-08,2026-07-04,Paid
+2025-12-04,Audit,Sunrise Motors,ENG-1249,R. Cruz,209089.67,0.0,2025-12-19,2026-07-03,Unpaid
+2025-05-02,Accounting,AgriHarvest Co.,ENG-1250,M. Yamada,300621.19,300621.19,2025-06-16,,Paid
+2025-08-15,Audit,Metro Pharma,ENG-1251,M. Yamada,162712.02,162712.02,2025-09-14,,Paid
+2026-04-28,Advisory,AgriHarvest Co.,ENG-1252,K. Reyes,464116.29,0.0,2026-05-28,,Unpaid
+2026-06-23,Accounting,Manila Logistics Corp.,ENG-1253,A. Tanaka,290178.87,0.0,2026-07-08,,Unpaid
+2026-06-02,Payroll,Yamato Trading,ENG-1254,A. Tanaka,153207.8,153207.8,2026-07-02,2026-07-13,Paid
+2026-05-16,Tax,Cebu Resorts Group,ENG-1255,J. Santos,90927.32,90927.32,2026-05-31,,Paid
+2025-03-01,Advisory,Sakura Foods Inc.,ENG-1256,R. Cruz,352926.43,160258.52,2025-03-16,2026-08-01,Partial
+2025-03-16,Payroll,Sakura Foods Inc.,ENG-1257,A. Tanaka,65362.29,65362.29,2025-03-31,,Paid
+2025-02-02,Advisory,Sunrise Motors,ENG-1258,J. Santos,200770.8,200770.8,2025-03-04,,Paid
+2026-01-27,Audit,AgriHarvest Co.,ENG-1259,K. Reyes,291180.79,0.0,2026-03-28,2026-07-23,Unpaid
+2025-12-23,Tax,Sunrise Motors,ENG-1260,R. Cruz,0.0,0.0,2026-02-21,,Draft
+2025-01-24,Accounting,BPO Global,ENG-1261,R. Cruz,587954.78,587954.78,2025-03-25,,Paid
+2025-12-21,Advisory,TechBridge Solutions,ENG-1262,K. Reyes,126867.97,126867.97,2026-01-05,2026-07-22,Paid
+2025-09-04,Accounting,AgriHarvest Co.,ENG-1263,A. Tanaka,155405.71,155405.71,2025-09-19,,Paid
+2025-02-15,Tax,Sakura Foods Inc.,ENG-1264,R. Cruz,265268.6,265268.6,2025-03-17,,Paid
+2025-10-24,Payroll,AgriHarvest Co.,ENG-1265,M. Yamada,171130.45,0.0,2025-12-08,,Unpaid
+2025-11-06,Tax,GreenField Realty,ENG-1266,A. Tanaka,0.0,0.0,2025-12-06,,Draft
+2025-06-29,Payroll,AgriHarvest Co.,ENG-1267,J. Santos,390556.16,390556.16,2025-08-28,2026-07-02,Paid
+2025-11-23,Payroll,Cebu Resorts Group,ENG-1268,J. Santos,429932.71,429932.71,2026-01-07,2026-07-28,Paid
+2025-08-19,Tax,Cebu Resorts Group,ENG-1269,J. Santos,208412.39,0.0,2025-10-18,,Unpaid
+2026-06-27,Advisory,Yamato Trading,ENG-1270,M. Yamada,115091.94,115091.94,2026-07-27,2026-06-15,Paid
+2025-07-15,Accounting,BPO Global,ENG-1271,K. Reyes,68860.51,68860.51,2025-07-30,,Paid
+2025-08-11,Payroll,Sakura Foods Inc.,ENG-1272,R. Cruz,308460.76,0.0,2025-09-25,2026-08-07,Unpaid
+2025-05-01,Tax,Sunrise Motors,ENG-1273,R. Cruz,458252.37,0.0,2025-05-31,,Unpaid
+2025-09-03,Advisory,AgriHarvest Co.,ENG-1274,M. Yamada,349164.4,0.0,2025-11-02,,Unpaid
+2025-09-25,Audit,Yamato Trading,ENG-1275,M. Yamada,241400.99,0.0,2025-11-24,2026-07-26,Unpaid
+2026-01-15,Tax,Sakura Foods Inc.,ENG-1276,M. Yamada,215236.33,215236.33,2026-02-14,,Paid
+2026-03-04,Payroll,BPO Global,ENG-1277,J. Santos,205307.68,205307.68,2026-04-03,2026-08-02,Paid
+2025-12-12,Payroll,Sunrise Motors,ENG-1278,M. Yamada,184102.98,0.0,2026-02-10,,Unpaid
+2025-05-24,Tax,Manila Logistics Corp.,ENG-1279,A. Tanaka,443375.58,443375.58,2025-06-08,,Paid
+2026-02-27,Accounting,Yamato Trading,ENG-1280,M. Yamada,116995.26,39074.54,2026-03-29,2026-07-12,Partial
+2026-05-10,Accounting,Sunrise Motors,ENG-1281,M. Yamada,409199.23,409199.23,2026-07-09,2026-07-13,Paid
+2025-10-21,Payroll,Nippon Steel PH,ENG-1282,A. Tanaka,49599.85,0.0,2025-12-20,,Unpaid
+2026-06-21,Accounting,GreenField Realty,ENG-1283,J. Santos,123382.59,123382.59,2026-08-05,,Paid
+2026-01-18,Accounting,BPO Global,ENG-1284,M. Yamada,577206.76,577206.76,2026-02-17,,Paid
+2025-02-02,Accounting,Sunrise Motors,ENG-1285,R. Cruz,92360.28,92360.28,2025-04-03,2026-06-10,Paid
+2026-05-27,Accounting,Sakura Foods Inc.,ENG-1286,R. Cruz,513384.68,239050.03,2026-06-11,,Partial
+2026-05-02,Tax,Metro Pharma,ENG-1287,A. Tanaka,0.0,0.0,2026-06-16,,Draft
+2025-11-19,Tax,Sunrise Motors,ENG-1288,J. Santos,48768.53,48768.53,2025-12-19,,Paid
+2025-11-03,Accounting,Cebu Resorts Group,ENG-1289,M. Yamada,130972.14,130972.14,2026-01-02,,Paid
+2025-05-24,Advisory,BPO Global,ENG-1290,A. Tanaka,482678.93,163731.38,2025-07-08,2026-07-07,Partial
+2026-02-11,Audit,Yamato Trading,ENG-1291,J. Santos,582595.5,582595.5,2026-03-28,,Paid
+2025-12-31,Tax,AgriHarvest Co.,ENG-1292,J. Santos,349701.13,349701.13,2026-01-30,,Paid
+2025-10-30,Accounting,Sunrise Motors,ENG-1293,R. Cruz,486910.9,0.0,2025-11-14,2026-07-04,Unpaid
+2025-11-21,Advisory,GreenField Realty,ENG-1294,A. Tanaka,241992.13,241992.13,2026-01-05,,Paid
+2025-03-31,Tax,Pacific Garments,ENG-1295,K. Reyes,144939.4,144939.4,2025-05-30,2026-06-15,Paid
+2025-11-29,Accounting,Sunrise Motors,ENG-1296,K. Reyes,523682.18,523682.18,2026-01-28,2026-06-15,Paid
+2026-06-18,Tax,Yamato Trading,ENG-1297,R. Cruz,134966.44,134966.44,2026-07-18,2026-06-27,Paid
+2025-06-21,Accounting,Pacific Garments,ENG-1298,M. Yamada,283418.71,283418.71,2025-08-20,,Paid
+2026-05-23,Tax,TechBridge Solutions,ENG-1299,M. Yamada,372531.58,372531.58,2026-06-07,2026-06-10,Paid
+2026-01-25,Payroll,AgriHarvest Co.,ENG-1300,K. Reyes,490282.82,490282.82,2026-03-11,,Paid
+2025-11-04,Tax,Nippon Steel PH,ENG-1301,J. Santos,0.0,0.0,2025-12-04,,Draft
+2025-10-26,Audit,TechBridge Solutions,ENG-1302,M. Yamada,451529.64,353945.75,2025-11-25,2026-06-27,Partial
+2025-07-24,Accounting,Yamato Trading,ENG-1303,R. Cruz,371647.14,371647.14,2025-08-08,,Paid
+2025-10-26,Advisory,Nippon Steel PH,ENG-1304,M. Yamada,505517.81,505517.81,2025-12-25,,Paid
+2025-09-16,Tax,Yamato Trading,ENG-1305,K. Reyes,408851.26,0.0,2025-11-15,2026-07-18,Unpaid
+2026-06-03,Advisory,Pacific Garments,ENG-1306,K. Reyes,557157.62,0.0,2026-08-02,,Unpaid
+2025-03-29,Payroll,Sakura Foods Inc.,ENG-1307,K. Reyes,101246.88,101246.88,2025-05-13,2026-07-19,Paid
+2025-12-06,Advisory,Cebu Resorts Group,ENG-1308,K. Reyes,580801.4,580801.4,2025-12-21,2026-06-24,Paid
+2025-08-15,Payroll,Yamato Trading,ENG-1309,A. Tanaka,289635.99,289635.99,2025-09-14,2026-06-11,Paid
+2026-03-02,Audit,Yamato Trading,ENG-1310,R. Cruz,555506.63,555506.63,2026-04-01,2026-07-01,Paid
+2026-05-10,Payroll,Sakura Foods Inc.,ENG-1311,A. Tanaka,235048.17,235048.17,2026-07-09,2026-06-29,Paid
+2025-12-18,Accounting,Cebu Resorts Group,ENG-1312,R. Cruz,402863.15,153965.05,2026-01-17,,Partial
+2026-03-13,Audit,Nippon Steel PH,ENG-1313,J. Santos,576739.07,576739.07,2026-05-12,,Paid
+2025-01-30,Advisory,TechBridge Solutions,ENG-1314,A. Tanaka,452937.49,0.0,2025-03-31,,Unpaid
+2025-07-30,Tax,Cebu Resorts Group,ENG-1315,R. Cruz,195873.11,0.0,2025-08-14,,Unpaid
+2025-11-30,Audit,AgriHarvest Co.,ENG-1316,M. Yamada,150361.59,150361.59,2026-01-29,,Paid
+2026-02-02,Payroll,AgriHarvest Co.,ENG-1317,M. Yamada,382332.72,181211.3,2026-04-03,,Partial
+2025-03-28,Payroll,Pacific Garments,ENG-1318,R. Cruz,416381.65,416381.65,2025-04-27,2026-06-21,Paid
+2026-02-02,Payroll,Yamato Trading,ENG-1319,K. Reyes,274213.9,274213.9,2026-04-03,,Paid
+2025-06-20,Tax,Metro Pharma,ENG-1320,A. Tanaka,314199.53,314199.53,2025-08-04,,Paid
+2025-01-10,Audit,Cebu Resorts Group,ENG-1321,J. Santos,311380.99,311380.99,2025-03-11,,Paid
+2026-05-19,Advisory,Sakura Foods Inc.,ENG-1322,R. Cruz,272753.04,0.0,2026-07-18,2026-07-16,Unpaid
+2025-02-03,Audit,Metro Pharma,ENG-1323,J. Santos,193917.63,193917.63,2025-03-05,,Paid
+2026-06-08,Payroll,Sakura Foods Inc.,ENG-1324,J. Santos,103398.16,103398.16,2026-07-23,,Paid
+2025-08-12,Payroll,Yamato Trading,ENG-1325,M. Yamada,594274.41,594274.41,2025-09-11,2026-06-12,Paid
+2025-03-31,Audit,Metro Pharma,ENG-1326,M. Yamada,0.0,0.0,2025-04-30,2026-07-27,Draft
+2026-03-15,Payroll,Sakura Foods Inc.,ENG-1327,K. Reyes,132949.71,132949.71,2026-04-14,,Paid
+2026-06-30,Audit,GreenField Realty,ENG-1328,M. Yamada,197407.61,197407.61,2026-08-14,,Paid
+2025-10-01,Payroll,TechBridge Solutions,ENG-1329,A. Tanaka,573342.51,573342.51,2025-10-16,2026-07-28,Paid
+2025-05-10,Audit,BPO Global,ENG-1330,J. Santos,432798.86,432798.86,2025-06-09,,Paid
+2025-05-26,Advisory,AgriHarvest Co.,ENG-1331,A. Tanaka,363358.3,363358.3,2025-07-25,2026-06-14,Paid
+2026-06-12,Advisory,Pacific Garments,ENG-1332,K. Reyes,459889.33,339701.24,2026-08-11,,Partial
+2025-04-06,Accounting,Cebu Resorts Group,ENG-1333,J. Santos,449321.88,449321.88,2025-05-21,,Paid
+2026-03-16,Tax,Pacific Garments,ENG-1334,K. Reyes,501914.68,501914.68,2026-04-30,,Paid
+2025-05-14,Payroll,Sakura Foods Inc.,ENG-1335,A. Tanaka,357039.58,357039.58,2025-06-28,,Paid
+2026-04-16,Accounting,Sakura Foods Inc.,ENG-1336,J. Santos,0.0,0.0,2026-05-16,,Draft
+2025-05-16,Tax,GreenField Realty,ENG-1337,A. Tanaka,534002.75,534002.75,2025-06-30,2026-07-03,Paid
+2025-06-19,Audit,Manila Logistics Corp.,ENG-1338,A. Tanaka,69000.87,45747.18,2025-07-19,,Partial
+2025-08-07,Accounting,Yamato Trading,ENG-1339,A. Tanaka,307011.76,307011.76,2025-09-06,,Paid
+2025-12-18,Accounting,Yamato Trading,ENG-1340,A. Tanaka,0.0,0.0,2026-02-16,,Draft
+2026-01-28,Tax,GreenField Realty,ENG-1341,R. Cruz,90025.41,0.0,2026-02-12,2026-08-05,Unpaid
+2025-05-17,Advisory,Nippon Steel PH,ENG-1342,J. Santos,399282.64,133442.58,2025-06-01,,Partial
+2025-08-07,Audit,Yamato Trading,ENG-1343,R. Cruz,391724.82,391724.82,2025-10-06,,Paid
+2025-04-13,Accounting,Pacific Garments,ENG-1344,R. Cruz,118407.36,118407.36,2025-06-12,2026-07-07,Paid
+2025-10-11,Tax,Sunrise Motors,ENG-1345,A. Tanaka,400987.52,400987.52,2025-11-25,,Paid
+2025-07-30,Audit,BPO Global,ENG-1346,J. Santos,329939.51,329939.51,2025-09-28,2026-06-13,Paid
+2025-04-26,Advisory,Pacific Garments,ENG-1347,R. Cruz,175005.78,58715.49,2025-05-11,,Partial
+2026-03-07,Advisory,Sakura Foods Inc.,ENG-1348,M. Yamada,244630.98,166682.49,2026-03-22,2026-06-14,Partial
+2025-02-10,Tax,AgriHarvest Co.,ENG-1349,K. Reyes,0.0,0.0,2025-04-11,,Draft
+2026-03-10,Advisory,Manila Logistics Corp.,ENG-1350,K. Reyes,433013.96,433013.96,2026-04-09,2026-06-29,Paid
+2025-06-09,Tax,Sunrise Motors,ENG-1351,R. Cruz,340378.5,340378.5,2025-06-24,2026-07-07,Paid
+2025-09-08,Accounting,Sakura Foods Inc.,ENG-1352,M. Yamada,88279.17,88279.17,2025-11-07,,Paid
+2025-05-03,Tax,Pacific Garments,ENG-1353,K. Reyes,47092.38,47092.38,2025-05-18,2026-08-09,Paid
+2025-09-23,Payroll,Manila Logistics Corp.,ENG-1354,A. Tanaka,133499.25,133499.25,2025-11-07,,Paid
+2026-03-16,Audit,Cebu Resorts Group,ENG-1355,M. Yamada,192309.13,192309.13,2026-03-31,,Paid
+2026-05-27,Accounting,Metro Pharma,ENG-1356,A. Tanaka,521241.48,521241.48,2026-06-26,2026-06-16,Paid
+2026-06-06,Tax,Pacific Garments,ENG-1357,J. Santos,41438.36,0.0,2026-06-21,2026-07-10,Unpaid
+2025-07-03,Tax,TechBridge Solutions,ENG-1358,M. Yamada,561449.64,0.0,2025-09-01,2026-06-25,Unpaid
+2025-03-21,Audit,Cebu Resorts Group,ENG-1359,A. Tanaka,360060.14,360060.14,2025-04-05,2026-07-31,Paid
+2025-03-12,Advisory,Yamato Trading,ENG-1360,A. Tanaka,531115.09,0.0,2025-04-26,2026-07-15,Unpaid
+2025-07-25,Audit,Metro Pharma,ENG-1361,J. Santos,203293.25,0.0,2025-08-24,,Unpaid
+2025-09-09,Tax,AgriHarvest Co.,ENG-1362,A. Tanaka,0.0,0.0,2025-09-24,2026-07-02,Draft
+2025-01-02,Audit,BPO Global,ENG-1363,J. Santos,465000.33,465000.33,2025-02-16,2026-07-13,Paid
+2025-03-03,Advisory,BPO Global,ENG-1364,K. Reyes,584633.17,584633.17,2025-04-17,2026-08-07,Paid
+2026-01-17,Advisory,AgriHarvest Co.,ENG-1365,J. Santos,296736.5,0.0,2026-02-01,,Unpaid
+2025-03-05,Accounting,Pacific Garments,ENG-1366,J. Santos,0.0,0.0,2025-04-04,2026-08-03,Draft
+2025-11-22,Audit,Metro Pharma,ENG-1367,A. Tanaka,293544.4,293544.4,2025-12-22,2026-07-29,Paid
+2025-04-19,Tax,BPO Global,ENG-1368,J. Santos,132049.99,132049.99,2025-06-18,2026-07-02,Paid
+2026-04-20,Audit,GreenField Realty,ENG-1369,K. Reyes,188404.44,188404.44,2026-05-20,,Paid
+2025-08-09,Accounting,Pacific Garments,ENG-1370,J. Santos,508117.86,508117.86,2025-08-24,,Paid
+2025-02-20,Payroll,Yamato Trading,ENG-1371,K. Reyes,419222.69,419222.69,2025-03-22,2026-07-05,Paid
+2025-09-13,Payroll,BPO Global,ENG-1372,R. Cruz,93046.16,93046.16,2025-10-13,2026-06-13,Paid
+2026-02-15,Tax,Manila Logistics Corp.,ENG-1373,A. Tanaka,248454.26,154623.65,2026-04-01,,Partial
+2025-07-22,Accounting,Pacific Garments,ENG-1374,A. Tanaka,545397.81,545397.81,2025-08-21,2026-08-03,Paid
+2026-04-18,Accounting,TechBridge Solutions,ENG-1375,J. Santos,0.0,0.0,2026-06-17,,Draft
+2026-01-27,Accounting,GreenField Realty,ENG-1376,M. Yamada,422599.23,422599.23,2026-02-26,,Paid
+2025-06-02,Advisory,Cebu Resorts Group,ENG-1377,J. Santos,59403.69,25121.37,2025-07-17,,Partial
+2025-03-31,Accounting,Cebu Resorts Group,ENG-1378,R. Cruz,196674.55,196674.55,2025-04-30,,Paid
+2025-01-20,Payroll,Yamato Trading,ENG-1379,M. Yamada,594066.02,0.0,2025-03-06,,Unpaid
+2026-05-30,Payroll,Sakura Foods Inc.,ENG-1380,M. Yamada,220098.47,220098.47,2026-06-14,2026-06-24,Paid
+2026-04-29,Accounting,Manila Logistics Corp.,ENG-1381,R. Cruz,336482.08,0.0,2026-05-29,,Unpaid
+2025-09-30,Tax,BPO Global,ENG-1382,K. Reyes,338866.16,0.0,2025-10-15,,Unpaid
+2025-12-30,Advisory,Pacific Garments,ENG-1383,M. Yamada,0.0,0.0,2026-01-29,2026-07-17,Draft
+2025-01-29,Payroll,BPO Global,ENG-1384,J. Santos,433933.61,433933.61,2025-02-28,,Paid
+2025-11-13,Payroll,Sakura Foods Inc.,ENG-1385,K. Reyes,138311.79,138311.79,2025-11-28,2026-06-24,Paid
+2025-01-01,Advisory,Pacific Garments,ENG-1386,A. Tanaka,225771.04,158767.32,2025-02-15,,Partial
+2025-06-01,Accounting,Pacific Garments,ENG-1387,A. Tanaka,368501.14,0.0,2025-06-16,,Unpaid
+2026-02-10,Audit,Sunrise Motors,ENG-1388,J. Santos,368169.33,368169.33,2026-03-27,2026-06-20,Paid
+2025-11-21,Advisory,Nippon Steel PH,ENG-1389,J. Santos,0.0,0.0,2026-01-05,2026-07-17,Draft
+2025-10-29,Audit,Metro Pharma,ENG-1390,A. Tanaka,111315.08,0.0,2025-12-28,,Unpaid
+2025-11-22,Tax,Manila Logistics Corp.,ENG-1391,J. Santos,0.0,0.0,2025-12-22,,Draft
+2025-12-06,Tax,Manila Logistics Corp.,ENG-1392,M. Yamada,457392.26,457392.26,2026-01-20,2026-08-05,Paid
+2025-01-12,Advisory,Manila Logistics Corp.,ENG-1393,A. Tanaka,188518.97,188518.97,2025-01-27,2026-07-30,Paid
+2026-01-31,Accounting,Yamato Trading,ENG-1394,J. Santos,285403.28,285403.28,2026-03-02,,Paid
+2026-01-20,Audit,Sakura Foods Inc.,ENG-1395,M. Yamada,96799.99,96799.99,2026-02-19,2026-06-14,Paid
+2025-11-23,Accounting,Nippon Steel PH,ENG-1396,A. Tanaka,186231.52,186231.52,2026-01-07,2026-07-04,Paid
+2025-04-06,Payroll,TechBridge Solutions,ENG-1397,R. Cruz,0.0,0.0,2025-06-05,,Draft
+2026-03-21,Payroll,TechBridge Solutions,ENG-1398,K. Reyes,127978.12,127978.12,2026-04-20,,Paid
+2025-09-29,Payroll,Cebu Resorts Group,ENG-1399,J. Santos,409934.82,409934.82,2025-10-14,2026-07-16,Paid
+2025-02-25,Tax,AgriHarvest Co.,ENG-1400,K. Reyes,242064.2,242064.2,2025-04-11,,Paid
+2025-07-24,Advisory,Yamato Trading,ENG-1401,A. Tanaka,94312.66,94312.66,2025-09-07,,Paid
+2026-02-12,Audit,TechBridge Solutions,ENG-1402,R. Cruz,303728.89,0.0,2026-03-29,2026-07-14,Unpaid
+2026-01-26,Audit,GreenField Realty,ENG-1403,R. Cruz,246864.93,246864.93,2026-03-12,,Paid
+2025-03-05,Audit,TechBridge Solutions,ENG-1404,K. Reyes,124633.18,43416.13,2025-04-19,,Partial
+2025-03-04,Tax,AgriHarvest Co.,ENG-1405,J. Santos,510846.41,0.0,2025-05-03,,Unpaid
+2025-08-30,Payroll,Cebu Resorts Group,ENG-1406,K. Reyes,306706.88,306706.88,2025-09-14,,Paid
+2025-05-31,Payroll,Nippon Steel PH,ENG-1407,R. Cruz,107357.85,0.0,2025-06-30,,Unpaid
+2025-05-10,Tax,AgriHarvest Co.,ENG-1408,R. Cruz,63898.5,63898.5,2025-07-09,2026-08-01,Paid
+2025-09-22,Payroll,TechBridge Solutions,ENG-1409,K. Reyes,219059.71,0.0,2025-10-07,2026-07-15,Unpaid
+2025-10-10,Audit,Metro Pharma,ENG-1410,K. Reyes,331025.38,0.0,2025-10-25,,Unpaid
+2026-03-06,Payroll,Metro Pharma,ENG-1411,A. Tanaka,103010.55,103010.55,2026-03-21,,Paid
+2025-12-19,Audit,Yamato Trading,ENG-1412,A. Tanaka,531620.4,531620.4,2026-02-17,,Paid
+2025-10-10,Tax,Pacific Garments,ENG-1413,R. Cruz,265665.42,170133.84,2025-12-09,2026-08-05,Partial
+2026-05-02,Accounting,GreenField Realty,ENG-1414,M. Yamada,555667.59,0.0,2026-05-17,2026-07-30,Unpaid
+2026-05-19,Audit,Yamato Trading,ENG-1415,M. Yamada,520611.48,409329.9,2026-06-18,2026-07-27,Partial
+2026-03-03,Audit,TechBridge Solutions,ENG-1416,J. Santos,378788.31,378788.31,2026-05-02,2026-08-01,Paid
+2026-01-18,Payroll,Cebu Resorts Group,ENG-1417,J. Santos,499769.74,499769.74,2026-02-17,2026-07-25,Paid
+2026-06-21,Tax,BPO Global,ENG-1418,A. Tanaka,532426.25,532426.25,2026-07-21,,Paid
+2025-02-03,Tax,Yamato Trading,ENG-1419,K. Reyes,295611.25,0.0,2025-03-05,2026-08-01,Unpaid
+2025-05-07,Advisory,Nippon Steel PH,ENG-1420,J. Santos,421457.64,421457.64,2025-07-06,,Paid

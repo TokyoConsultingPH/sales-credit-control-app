@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Generated output / scratch
+output/
+scratchpad_*
+sales_credit_report_*.xlsx
+
+# Streamlit local secrets (NEVER commit) — config.toml is fine to commit
+.streamlit/secrets.toml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# NOTE: the client workbook in "Sample file/" IS committed (private repo only).

@@ -1,0 +1,24 @@
+# Render Blueprint — deploys the Streamlit web app + a managed PostgreSQL.
+# In Render: New +  ->  Blueprint  ->  pick this repo. Render reads this file.
+services:
+  - type: web
+    name: sales-credit-control
+    runtime: python
+    plan: starter            # 'free' also works; starter avoids cold-stops
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: APP_PASSWORD
+        sync: false          # set this secret in the Render dashboard
+      - key: DATABASE_URL     # auto-filled from the database below
+        fromDatabase:
+          name: tcf-postgres
+          property: connectionString
+
+databases:
+  - name: tcf-postgres
+    plan: free               # free Postgres (expires after 30 days on free tier)
+    databaseName: tcf
+    user: tcf

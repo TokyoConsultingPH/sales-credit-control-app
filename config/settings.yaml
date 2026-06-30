@@ -1,0 +1,106 @@
+# =====================================================================
+# Sales Reporting & Credit Control Automation - configuration
+# Edit this file to match YOUR data and business rules.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. COLUMN MAPPING
+# Map the column names in YOUR file (right side) to the canonical names
+# the app understands (left side). Change the right-side values to
+# whatever your dropped Excel/CSV actually uses. Leave blank ("") for
+# any field you don't have.
+# ---------------------------------------------------------------------
+columns:
+  date: "Date"                     # invoice / transaction date
+  department: "Department"         # the column to group each report by
+  client: "Client"
+  engagement: "Engagement"
+  manager: "Manager"
+  invoiced: "Invoiced"             # amount billed on this row
+  received: "Received"             # amount collected against it
+  due_date: "DueDate"              # payment due date (for AR aging)
+  next_billing_date: "NextBillingDate"  # next scheduled billing (for "due for billing")
+  status: "Status"                 # e.g. Paid / Partial / Unpaid / Draft
+
+# ---------------------------------------------------------------------
+# 2. PER-DEPARTMENT SALES TARGETS (per the reporting period you upload)
+# Departments not listed here fall back to "default_target".
+# ---------------------------------------------------------------------
+# Set a target per department (Branch or Category, matching your grouping).
+# Leave a target out / 0 and the dashboard shows attainment as blank (no
+# misleading numbers). default_target: 0 means "no target unless listed".
+targets:
+  default_target: 0
+  by_department:
+    # --- examples by Branch (uncomment / set your real monthly/annual targets) ---
+    # Makati: 20000000
+    # Cebu: 5000000
+    # --- examples by Category ---
+    # Monthly Accounting: 12000000
+    # Advisory: 6000000
+
+# ---------------------------------------------------------------------
+# 3. MONITORING THRESHOLDS / ALERT RULES
+# ---------------------------------------------------------------------
+monitoring:
+  # Flag a department if actual billings fall below this % of its target.
+  target_attainment_warn_pct: 80
+  # Days ahead to look for engagements "due for billing".
+  billing_due_horizon_days: 14
+  # AR aging buckets (days past due). Anything beyond the last bound is "90+".
+  ar_aging_buckets: [30, 60, 90]
+  # Flag receivables overdue by more than this many days as high-risk.
+  ar_high_risk_days: 60
+  # Flag client concentration: warn if one client is more than this % of a
+  # department's billings (credit-risk / dependency signal).
+  client_concentration_warn_pct: 40
+
+# ---------------------------------------------------------------------
+# 4. DATABASE (PostgreSQL) — optional live source
+# Fill these in when you have the connection details. The PASSWORD is NOT
+# stored here: set the env var TCF_DB_PASSWORD (or PGPASSWORD), or type it
+# in the app sidebar. You can also override host/user/etc. in the sidebar.
+# ---------------------------------------------------------------------
+database:
+  enabled: true
+  host: "localhost"
+  port: 5432
+  dbname: "tcf"
+  user: "postgres"
+  schema: "public"
+
+  # The query must return columns that map (via db_columns below) to the
+  # canonical fields. Use SQL aliases or the mapping — whichever is easier.
+  # Leave 'query' blank to browse the schema first and build it in the app.
+  # Default works once you run scripts/load_to_db.py (creates 'billing_lines').
+  # Replace with your own tables/columns when reading your real ERP schema.
+  query: |
+    SELECT invoice_date, branch, service_category, staff, classification,
+           client_name, engagement_name,
+           invoiced_amount, collected_amount, due_date,
+           next_billing_date, status
+    FROM billing_lines;
+
+  # Map canonical field (left) -> column name returned by your query (right).
+  # Omit any you don't have. branch / category / pic / classification are the
+  # selectable "department" dimensions.
+  db_columns:
+    date: "invoice_date"
+    branch: "branch"
+    category: "service_category"
+    pic: "staff"
+    classification: "classification"
+    client: "client_name"
+    engagement: "engagement_name"
+    invoiced: "invoiced_amount"
+    received: "collected_amount"
+    due_date: "due_date"
+    next_billing_date: "next_billing_date"
+    status: "status"
+
+# ---------------------------------------------------------------------
+# 5. GENERAL
+# ---------------------------------------------------------------------
+general:
+  currency_symbol: "PHP "
+  company_name: "Tokyo Consulting Firm - Phil Branch"
