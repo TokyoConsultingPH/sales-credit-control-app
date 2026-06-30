@@ -18,6 +18,7 @@ from src import workbook_loader as W
 from src import db_loader as DB
 from src import monitoring as M
 from src import reports as R
+from src import quotations as Q
 from src.auth import require_password
 
 ROOT = Path(__file__).resolve().parent
@@ -56,12 +57,89 @@ def load_tcf(path_str: str) -> pd.DataFrame:
     return W.load_workbook(path_str)
 
 
+def render_quotation_form() -> None:
+    """Employee form to report an Ordered Quotation."""
+    import datetime as _dt
+    st.title("📝 Report an Ordered Quotation")
+    st.caption(f"New orders are saved to the **{Q.storage_label()}**. "
+               "Condition is recorded as **Order**.")
+
+    with st.form("ordered_quotation", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            submitted_by = st.text_input("Your name *")
+            quotation_number = st.text_input("Quotation number")
+            date = st.date_input("Date ordered *", value=_dt.date.today())
+        with c2:
+            company = st.text_input("Company name *")
+            branch = st.selectbox("Branch", Q.BRANCHES)
+            classification = st.selectbox("Classification", Q.CLASSIFICATIONS)
+        with c3:
+            client_type = st.selectbox("Client", Q.CLIENT_TYPES)
+            type_sel = st.selectbox("Type of service", Q.SERVICE_TYPES)
+            process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
+
+        type_other = st.text_input("If 'Other' service, specify") if type_sel == "Other" else ""
+        c4, c5, c6 = st.columns(3)
+        with c4:
+            monthly_fee = st.number_input("Monthly total fee (if monthly)", min_value=0.0, step=1000.0)
+        with c5:
+            yearly_fee = st.number_input("Yearly / spot total fee", min_value=0.0, step=1000.0)
+        with c6:
+            invoiced_month = st.text_input("Invoiced month (e.g. 2026-07)")
+        contents = st.text_area("Contents / description")
+
+        submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
+
+    if submitted:
+        errors = []
+        if not submitted_by.strip():
+            errors.append("Your name is required.")
+        if not company.strip():
+            errors.append("Company name is required.")
+        if monthly_fee <= 0 and yearly_fee <= 0:
+            errors.append("Enter a monthly fee or a yearly/spot fee.")
+        if errors:
+            for e in errors:
+                st.error(e)
+        else:
+            rec = Q.build_record(
+                submitted_by=submitted_by, quotation_number=quotation_number, date=date,
+                company=company, branch=branch, classification=classification,
+                type_of_service=(type_other or type_sel), client_type=client_type,
+                process_of_contact=process, invoiced_month=invoiced_month,
+                monthly_fee=monthly_fee, yearly_or_spot_fee=yearly_fee, contents=contents)
+            where = Q.save_quotation(rec)
+            st.success(f"Saved order for **{company}** to {where}.")
+
+    st.divider()
+    st.subheader("Recent ordered quotations")
+    qdf = Q.load_quotations()
+    if qdf.empty:
+        st.info("No quotations submitted yet.")
+    else:
+        st.caption(f"{len(qdf)} total")
+        st.dataframe(qdf, use_container_width=True, hide_index=True)
+        st.download_button(
+            "⬇️ Download all (CSV)", qdf.to_csv(index=False).encode("utf-8-sig"),
+            file_name="ordered_quotations.csv", mime="text/csv")
+
+
 # --------------------------------------------------------------------------- #
-# Sidebar — data source
+# Sidebar — page selector
 # --------------------------------------------------------------------------- #
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 
+page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation"])
+st.sidebar.divider()
+if page == "📝 Report Ordered Quotation":
+    render_quotation_form()
+    st.stop()
+
+# --------------------------------------------------------------------------- #
+# Sidebar — data source
+# --------------------------------------------------------------------------- #
 tcf_path = find_tcf_workbook()
 db_enabled = cfg.get("database", {}).get("enabled", False)
 sources = []

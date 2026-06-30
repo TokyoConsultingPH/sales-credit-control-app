@@ -60,6 +60,20 @@ The app opens at http://localhost:8501.
    with a summary, alerts, trends, AR aging, due-for-billing, and one detail
    sheet per department.
 
+## Reporting Ordered Quotations (employee data entry)
+
+Use the **📝 Report Ordered Quotation** page (sidebar) to log a new order. The
+form mirrors the Quotation control sheet (Date, Company, Branch, Classification,
+Type of service, Client type, Process of contact, Monthly / Yearly-Spot fee,
+Contents) and records **Condition = Order** plus who submitted it and when.
+
+Submissions are saved to:
+- a **local file** `data/quotations.csv` when running on your computer, and
+- the **PostgreSQL database** automatically when `DATABASE_URL` is set (cloud).
+
+> On the free Streamlit Cloud host (no database) the local file resets on
+> restart — connect a database for permanent multi-user storage.
+
 ## Deploying to the cloud (GitHub + Render)
 
 The app can run on a public Render URL instead of your laptop.
