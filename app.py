@@ -58,36 +58,52 @@ def load_tcf(path_str: str) -> pd.DataFrame:
 
 
 def render_quotation_form() -> None:
-    """Employee form to report an Ordered Quotation."""
+    """Employee form to report an Ordered Quotation (mirrors the TCF Quotation doc)."""
     import datetime as _dt
     st.title("📝 Report an Ordered Quotation")
-    st.caption(f"New orders are saved to the **{Q.storage_label()}**. "
-               "Condition is recorded as **Order**.")
+    st.caption(f"Fields follow the official Quotation (御見積書). Saved to the "
+               f"**{Q.storage_label()}** with Condition = **Order**.")
 
     with st.form("ordered_quotation", clear_on_submit=True):
-        c1, c2, c3 = st.columns(3)
+        st.markdown("##### 1 · Quotation")
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
             submitted_by = st.text_input("Your name *")
-            quotation_number = st.text_input("Quotation number")
-            date = st.date_input("Date ordered *", value=_dt.date.today())
         with c2:
-            company = st.text_input("Company name *")
-            branch = st.selectbox("Branch", Q.BRANCHES)
-            classification = st.selectbox("Classification", Q.CLASSIFICATIONS)
+            quotation_number = st.text_input("Quotation no.", placeholder="Q-TCF-PM-26-122")
         with c3:
-            client_type = st.selectbox("Client", Q.CLIENT_TYPES)
-            type_sel = st.selectbox("Type of service", Q.SERVICE_TYPES)
-            process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
-
-        type_other = st.text_input("If 'Other' service, specify") if type_sel == "Other" else ""
-        c4, c5, c6 = st.columns(3)
+            issue_date = st.date_input("Issue date", value=_dt.date.today())
         with c4:
-            monthly_fee = st.number_input("Monthly total fee (if monthly)", min_value=0.0, step=1000.0)
-        with c5:
-            yearly_fee = st.number_input("Yearly / spot total fee", min_value=0.0, step=1000.0)
-        with c6:
-            invoiced_month = st.text_input("Invoiced month (e.g. 2026-07)")
-        contents = st.text_area("Contents / description")
+            order_date = st.date_input("Order date *", value=_dt.date.today(),
+                                       help="When the client acknowledged/ordered.")
+
+        st.markdown("##### 2 · Client")
+        d1, d2, d3 = st.columns(3)
+        with d1:
+            company = st.text_input("Company name *")
+            client_type = st.selectbox("Client", Q.CLIENT_TYPES)
+        with d2:
+            contact_person = st.text_input("Contact person")
+            contact_title = st.text_input("Title / position")
+        with d3:
+            contact_email = st.text_input("Email")
+            process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
+        contact_address = st.text_input("Address")
+
+        st.markdown("##### 3 · Service ordered")
+        e1, e2, e3 = st.columns(3)
+        with e1:
+            type_sel = st.selectbox("Service", Q.SERVICE_TYPES)
+            branch = st.selectbox("Branch", Q.BRANCHES)
+        with e2:
+            unit = st.selectbox("Unit", Q.UNITS)
+            classification = st.selectbox("Classification", Q.CLASSIFICATIONS)
+        with e3:
+            price = st.number_input("Price (PHP) *", min_value=0.0, step=1000.0)
+            invoiced_month = st.text_input("Invoiced month", placeholder="2026-07")
+        type_other = st.text_input("If 'Other' service, specify") if type_sel == "Other" else ""
+        service_description = st.text_area(
+            "Service description", placeholder="e.g. Annual statutory audit service for the YE May 31, 2026")
 
         submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
 
@@ -97,20 +113,23 @@ def render_quotation_form() -> None:
             errors.append("Your name is required.")
         if not company.strip():
             errors.append("Company name is required.")
-        if monthly_fee <= 0 and yearly_fee <= 0:
-            errors.append("Enter a monthly fee or a yearly/spot fee.")
+        if price <= 0:
+            errors.append("Enter the price.")
         if errors:
             for e in errors:
                 st.error(e)
         else:
             rec = Q.build_record(
-                submitted_by=submitted_by, quotation_number=quotation_number, date=date,
-                company=company, branch=branch, classification=classification,
-                type_of_service=(type_other or type_sel), client_type=client_type,
-                process_of_contact=process, invoiced_month=invoiced_month,
-                monthly_fee=monthly_fee, yearly_or_spot_fee=yearly_fee, contents=contents)
+                submitted_by=submitted_by, quotation_number=quotation_number,
+                issue_date=issue_date, order_date=order_date, company=company,
+                contact_person=contact_person, contact_title=contact_title,
+                contact_email=contact_email, contact_address=contact_address,
+                branch=branch, classification=classification, client_type=client_type,
+                process_of_contact=process, type_of_service=(type_other or type_sel),
+                service_description=service_description, unit=unit, price=price,
+                invoiced_month=invoiced_month)
             where = Q.save_quotation(rec)
-            st.success(f"Saved order for **{company}** to {where}.")
+            st.success(f"Saved order for **{company}** ({price:,.0f} {unit}) to {where}.")
 
     st.divider()
     st.subheader("Recent ordered quotations")

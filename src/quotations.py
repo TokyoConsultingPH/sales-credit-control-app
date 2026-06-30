@@ -1,8 +1,11 @@
 """Storage for employee-submitted 'Ordered Quotation' reports.
 
+Fields mirror the official TCF Quotation document (御見積書): client contact
+block, quotation number, issue/order dates, the ordered service line
+(type, description, unit, price), and order context. Condition is always 'Order'.
+
 Saves to a local CSV (data/quotations.csv) when running locally, and to a
-PostgreSQL table 'quotations' automatically when DATABASE_URL is set (e.g. on
-the cloud host). The field set mirrors the workbook's Quotation control sheet.
+PostgreSQL table 'quotations' automatically when DATABASE_URL is set.
 """
 from __future__ import annotations
 
@@ -17,19 +20,23 @@ TABLE = "quotations"
 
 # Column order used for both the CSV and the DB table.
 FIELDS = [
-    "submitted_at", "submitted_by", "quotation_number", "date", "month",
-    "company", "branch", "classification", "type_of_service", "condition",
-    "client_type", "process_of_contact", "invoiced_month",
-    "monthly_fee", "yearly_or_spot_fee", "contents",
+    "submitted_at", "submitted_by",
+    "quotation_number", "issue_date", "order_date", "month",
+    "company", "contact_person", "contact_title", "contact_email", "contact_address",
+    "branch", "classification", "client_type", "process_of_contact",
+    "type_of_service", "service_description", "unit", "price",
+    "condition", "invoiced_month",
 ]
 
-# Dropdown choices (match the workbook's data lists).
+# Dropdown choices (match the workbook's data lists and the quotation document).
 CLASSIFICATIONS = ["Subscribe", "Spot", "AMP"]
 BRANCHES = ["Makati", "Cebu", "AMP"]
 CLIENT_TYPES = ["New", "Existing", "Past"]
+UNITS = ["PHP/Year", "PHP/Month", "PHP/Spot"]
 SERVICE_TYPES = [
+    "Annual Statutory Audit Service", "Annual Compilation & Audit Assistance Service",
     "Monthly Accounting", "Accounting Spot", "Accounting Annual",
-    "Annual Audit", "Audit Spot", "Legal Spot", "Legal Annual",
+    "Audit Spot", "Legal Spot", "Legal Annual",
     "Advisory", "Proxy", "HR Spot", "Payroll", "Other",
 ]
 CONTACT_PROCESS = ["Referral", "Existing client", "Website", "Email", "Walk-in", "Other"]
@@ -44,8 +51,7 @@ def storage_label() -> str:
 
 
 def _engine():
-    from src.db_loader import make_engine, _normalize_url  # lazy import
-    # DATABASE_URL path inside make_engine handles the connection string.
+    from src.db_loader import make_engine  # lazy import; uses DATABASE_URL
     return make_engine({}, None, None)
 
 
@@ -70,9 +76,7 @@ def load_quotations() -> pd.DataFrame:
         if _use_db():
             from sqlalchemy import text
             with _engine().connect() as conn:
-                exists = conn.execute(text(
-                    "SELECT to_regclass('public.quotations')")).scalar()
-                if not exists:
+                if not conn.execute(text("SELECT to_regclass('public.quotations')")).scalar():
                     return pd.DataFrame(columns=FIELDS)
                 df = pd.read_sql(f"SELECT * FROM {TABLE}", conn)
         elif CSV_PATH.exists():
@@ -87,26 +91,35 @@ def load_quotations() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def build_record(*, submitted_by, quotation_number, date, company, branch,
-                 classification, type_of_service, client_type, process_of_contact,
-                 invoiced_month, monthly_fee, yearly_or_spot_fee, contents) -> dict:
+def build_record(*, submitted_by, quotation_number, issue_date, order_date,
+                 company, contact_person, contact_title, contact_email, contact_address,
+                 branch, classification, client_type, process_of_contact,
+                 type_of_service, service_description, unit, price,
+                 invoiced_month) -> dict:
     """Assemble a normalised record dict (Condition is always 'Order')."""
-    d = pd.to_datetime(date, errors="coerce")
+    od = pd.to_datetime(order_date, errors="coerce")
+    iss = pd.to_datetime(issue_date, errors="coerce")
+    basis = od if pd.notna(od) else iss
     return {
         "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "submitted_by": (submitted_by or "").strip(),
         "quotation_number": (quotation_number or "").strip(),
-        "date": d.strftime("%Y-%m-%d") if pd.notna(d) else "",
-        "month": d.strftime("%Y-%m") if pd.notna(d) else "",
+        "issue_date": iss.strftime("%Y-%m-%d") if pd.notna(iss) else "",
+        "order_date": od.strftime("%Y-%m-%d") if pd.notna(od) else "",
+        "month": basis.strftime("%Y-%m") if pd.notna(basis) else "",
         "company": (company or "").strip(),
+        "contact_person": (contact_person or "").strip(),
+        "contact_title": (contact_title or "").strip(),
+        "contact_email": (contact_email or "").strip(),
+        "contact_address": (contact_address or "").strip(),
         "branch": branch,
         "classification": classification,
-        "type_of_service": (type_of_service or "").strip(),
-        "condition": "Order",
         "client_type": client_type,
         "process_of_contact": (process_of_contact or "").strip(),
-        "invoiced_month": str(invoiced_month) if invoiced_month else "",
-        "monthly_fee": float(monthly_fee or 0),
-        "yearly_or_spot_fee": float(yearly_or_spot_fee or 0),
-        "contents": (contents or "").strip(),
+        "type_of_service": (type_of_service or "").strip(),
+        "service_description": (service_description or "").strip(),
+        "unit": unit,
+        "price": float(price or 0),
+        "condition": "Order",
+        "invoiced_month": str(invoiced_month or "").strip(),
     }
