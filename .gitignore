@@ -11,6 +11,9 @@ sales_credit_report_*.xlsx
 # Employee-submitted quotations (real business data — keep out of Git)
 data/quotations.csv
 
+# Client PDFs / documents (e.g. quotation references) — keep out of Git
+*.pdf
+
 # Streamlit local secrets (NEVER commit) — config.toml is fine to commit
 .streamlit/secrets.toml
 
