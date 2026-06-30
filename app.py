@@ -90,17 +90,14 @@ def render_quotation_form() -> None:
             process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
         contact_address = st.text_input("Address")
 
-        f1, f2 = st.columns(2)
-        with f1:
-            branch = st.selectbox("Branch", Q.BRANCHES)
-        with f2:
-            invoiced_month = st.text_input("Invoiced month", placeholder="2026-07")
+        branch = st.selectbox("Branch", Q.BRANCHES)
 
         st.markdown("##### 3 · Services ordered")
-        st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines.")
+        st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines. "
+                   "Set each line's **Invoiced month** (e.g. one line for the initial 50%, another for the final 50%).")
         line_template = pd.DataFrame([
             {"Service": "", "Description": "", "Classification": "Spot",
-             "Unit": "PHP/Year", "Price": 0.0}
+             "Unit": "PHP/Year", "Price": 0.0, "Invoiced month": ""}
         ])
         lines = st.data_editor(
             line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
@@ -110,6 +107,7 @@ def render_quotation_form() -> None:
                 "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
                 "Unit": st.column_config.SelectboxColumn("Unit", options=Q.UNITS),
                 "Price": st.column_config.NumberColumn("Price (PHP)", min_value=0.0, format="%.0f"),
+                "Invoiced month": st.column_config.TextColumn("Invoiced month", help="e.g. 2026-05 or 2026-05 (50%)"),
             })
 
         submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
@@ -139,7 +137,7 @@ def render_quotation_form() -> None:
                     branch=branch, client_type=client_type, process_of_contact=process,
                     line_no=i + 1, type_of_service=(r.get("Service") or "Other"),
                     service_description=r.get("Description"), classification=r.get("Classification"),
-                    unit=r.get("Unit"), price=r.get("Price"), invoiced_month=invoiced_month)
+                    unit=r.get("Unit"), price=r.get("Price"), invoiced_month=r.get("Invoiced month"))
                 for i, r in enumerate(valid_lines)
             ]
             where = Q.save_quotations(records)
