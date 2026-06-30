@@ -8,8 +8,9 @@ output/
 scratchpad_*
 sales_credit_report_*.xlsx
 
-# Employee-submitted quotations (real business data — keep out of Git)
+# Employee-submitted quotations + attachments (real business data — keep out of Git)
 data/quotations.csv
+data/attachments/
 
 # Client PDFs / documents (e.g. quotation references) — keep out of Git
 *.pdf

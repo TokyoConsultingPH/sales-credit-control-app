@@ -19,6 +19,7 @@ from src import db_loader as DB
 from src import monitoring as M
 from src import reports as R
 from src import quotations as Q
+from src import attachments as AT
 from src.auth import require_password
 
 ROOT = Path(__file__).resolve().parent
@@ -110,6 +111,12 @@ def render_quotation_form() -> None:
                 "Invoiced month": st.column_config.TextColumn("Invoiced month", help="e.g. 2026-05 or 2026-05 (50%)"),
             })
 
+        st.markdown("##### 4 · Attachments")
+        uploaded_files = st.file_uploader(
+            "Attach the signed quotation, PO, or supporting documents",
+            accept_multiple_files=True,
+            type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
+
         submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
 
     if submitted:
@@ -128,6 +135,9 @@ def render_quotation_form() -> None:
             for e in errors:
                 st.error(e)
         else:
+            quote_id = quotation_number.strip() or f"NOQ-{pd.Timestamp.now():%Y%m%d%H%M%S}"
+            stored = AT.save_attachments(quote_id, uploaded_files)
+            attach_str = "; ".join(stored)
             records = [
                 Q.build_record(
                     submitted_by=submitted_by, quotation_number=quotation_number,
@@ -137,13 +147,15 @@ def render_quotation_form() -> None:
                     branch=branch, client_type=client_type, process_of_contact=process,
                     line_no=i + 1, type_of_service=(r.get("Service") or "Other"),
                     service_description=r.get("Description"), classification=r.get("Classification"),
-                    unit=r.get("Unit"), price=r.get("Price"), invoiced_month=r.get("Invoiced month"))
+                    unit=r.get("Unit"), price=r.get("Price"), invoiced_month=r.get("Invoiced month"),
+                    attachments=attach_str)
                 for i, r in enumerate(valid_lines)
             ]
             where = Q.save_quotations(records)
             total = sum(rec["price"] for rec in records)
+            extra = f", {len(stored)} file(s) attached" if stored else ""
             st.success(f"Saved **{len(records)} service line(s)** for **{company}** "
-                       f"(total {total:,.0f}) to {where}.")
+                       f"(total {total:,.0f}{extra}) to {where}.")
 
     st.divider()
     st.subheader("Recent ordered quotations")
@@ -156,6 +168,17 @@ def render_quotation_form() -> None:
         st.download_button(
             "⬇️ Download all (CSV)", qdf.to_csv(index=False).encode("utf-8-sig"),
             file_name="ordered_quotations.csv", mime="text/csv")
+
+        names = sorted({n.strip() for cell in qdf.get("attachments", pd.Series(dtype=str)).dropna()
+                        for n in str(cell).split(";") if n.strip()})
+        if names:
+            with st.expander(f"📎 Attachments ({len(names)})"):
+                for nm in names:
+                    data = AT.get_attachment_bytes(nm)
+                    if data is not None:
+                        st.download_button(f"⬇️ {nm}", data, file_name=nm, key=f"att_{nm}")
+                    else:
+                        st.caption(f"⚠️ {nm} (file not found)")
 
 
 # --------------------------------------------------------------------------- #

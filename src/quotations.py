@@ -26,7 +26,7 @@ FIELDS = [
     "company", "contact_person", "contact_title", "contact_email", "contact_address",
     "branch", "client_type", "process_of_contact",
     "line_no", "type_of_service", "service_description", "classification", "unit", "price",
-    "condition", "invoiced_month",
+    "condition", "invoiced_month", "attachments",
 ]
 
 # Dropdown choices (match the workbook's data lists and the quotation document).
@@ -101,7 +101,7 @@ def build_record(*, submitted_by, quotation_number, issue_date, order_date,
                  company, contact_person, contact_title, contact_email, contact_address,
                  branch, client_type, process_of_contact,
                  line_no, type_of_service, service_description, classification, unit, price,
-                 invoiced_month) -> dict:
+                 invoiced_month, attachments="") -> dict:
     """Assemble one service-line record (Condition is always 'Order')."""
     od = pd.to_datetime(order_date, errors="coerce")
     iss = pd.to_datetime(issue_date, errors="coerce")
@@ -129,4 +129,5 @@ def build_record(*, submitted_by, quotation_number, issue_date, order_date,
         "price": float(price or 0),
         "condition": "Order",
         "invoiced_month": str(invoiced_month or "").strip(),
+        "attachments": attachments or "",
     }
