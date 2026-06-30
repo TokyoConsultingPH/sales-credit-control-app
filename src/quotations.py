@@ -19,12 +19,13 @@ CSV_PATH = ROOT / "data" / "quotations.csv"
 TABLE = "quotations"
 
 # Column order used for both the CSV and the DB table.
+# One row per service line; lines of the same quotation share the header fields.
 FIELDS = [
     "submitted_at", "submitted_by",
     "quotation_number", "issue_date", "order_date", "month",
     "company", "contact_person", "contact_title", "contact_email", "contact_address",
-    "branch", "classification", "client_type", "process_of_contact",
-    "type_of_service", "service_description", "unit", "price",
+    "branch", "client_type", "process_of_contact",
+    "line_no", "type_of_service", "service_description", "classification", "unit", "price",
     "condition", "invoiced_month",
 ]
 
@@ -55,10 +56,10 @@ def _engine():
     return make_engine({}, None, None)
 
 
-def save_quotation(record: dict) -> str:
-    """Persist one ordered-quotation record. Returns where it was saved."""
-    row = {k: record.get(k, "") for k in FIELDS}
-    df = pd.DataFrame([row], columns=FIELDS)
+def save_quotations(records: list[dict]) -> str:
+    """Persist one or more service-line records (one quotation = many lines)."""
+    rows = [{k: r.get(k, "") for k in FIELDS} for r in records]
+    df = pd.DataFrame(rows, columns=FIELDS)
 
     if _use_db():
         df.to_sql(TABLE, _engine(), if_exists="append", index=False)
@@ -68,6 +69,11 @@ def save_quotation(record: dict) -> str:
     header = not CSV_PATH.exists()
     df.to_csv(CSV_PATH, mode="a", header=header, index=False, encoding="utf-8-sig")
     return f"local file ({CSV_PATH})"
+
+
+def save_quotation(record: dict) -> str:
+    """Persist a single service-line record."""
+    return save_quotations([record])
 
 
 def load_quotations() -> pd.DataFrame:
@@ -93,10 +99,10 @@ def load_quotations() -> pd.DataFrame:
 
 def build_record(*, submitted_by, quotation_number, issue_date, order_date,
                  company, contact_person, contact_title, contact_email, contact_address,
-                 branch, classification, client_type, process_of_contact,
-                 type_of_service, service_description, unit, price,
+                 branch, client_type, process_of_contact,
+                 line_no, type_of_service, service_description, classification, unit, price,
                  invoiced_month) -> dict:
-    """Assemble a normalised record dict (Condition is always 'Order')."""
+    """Assemble one service-line record (Condition is always 'Order')."""
     od = pd.to_datetime(order_date, errors="coerce")
     iss = pd.to_datetime(issue_date, errors="coerce")
     basis = od if pd.notna(od) else iss
@@ -113,11 +119,12 @@ def build_record(*, submitted_by, quotation_number, issue_date, order_date,
         "contact_email": (contact_email or "").strip(),
         "contact_address": (contact_address or "").strip(),
         "branch": branch,
-        "classification": classification,
         "client_type": client_type,
         "process_of_contact": (process_of_contact or "").strip(),
+        "line_no": int(line_no),
         "type_of_service": (type_of_service or "").strip(),
         "service_description": (service_description or "").strip(),
+        "classification": classification,
         "unit": unit,
         "price": float(price or 0),
         "condition": "Order",

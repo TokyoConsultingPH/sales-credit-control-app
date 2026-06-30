@@ -63,9 +63,12 @@ The app opens at http://localhost:8501.
 ## Reporting Ordered Quotations (employee data entry)
 
 Use the **📝 Report Ordered Quotation** page (sidebar) to log a new order. The
-form mirrors the Quotation control sheet (Date, Company, Branch, Classification,
-Type of service, Client type, Process of contact, Monthly / Yearly-Spot fee,
-Contents) and records **Condition = Order** plus who submitted it and when.
+form mirrors the official Quotation document: a quotation header (no., issue/order
+dates), a client contact block, and a **multi-line service table** — add as many
+ordered services as needed under one quotation number (each line: service,
+description, classification, unit, price). Every line is saved as its own row
+sharing the quotation number, with **Condition = Order** plus who submitted it
+and when.
 
 Submissions are saved to:
 - a **local file** `data/quotations.csv` when running on your computer, and

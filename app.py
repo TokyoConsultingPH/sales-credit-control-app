@@ -90,46 +90,62 @@ def render_quotation_form() -> None:
             process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
         contact_address = st.text_input("Address")
 
-        st.markdown("##### 3 · Service ordered")
-        e1, e2, e3 = st.columns(3)
-        with e1:
-            type_sel = st.selectbox("Service", Q.SERVICE_TYPES)
+        f1, f2 = st.columns(2)
+        with f1:
             branch = st.selectbox("Branch", Q.BRANCHES)
-        with e2:
-            unit = st.selectbox("Unit", Q.UNITS)
-            classification = st.selectbox("Classification", Q.CLASSIFICATIONS)
-        with e3:
-            price = st.number_input("Price (PHP) *", min_value=0.0, step=1000.0)
+        with f2:
             invoiced_month = st.text_input("Invoiced month", placeholder="2026-07")
-        type_other = st.text_input("If 'Other' service, specify") if type_sel == "Other" else ""
-        service_description = st.text_area(
-            "Service description", placeholder="e.g. Annual statutory audit service for the YE May 31, 2026")
+
+        st.markdown("##### 3 · Services ordered")
+        st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines.")
+        line_template = pd.DataFrame([
+            {"Service": "", "Description": "", "Classification": "Spot",
+             "Unit": "PHP/Year", "Price": 0.0}
+        ])
+        lines = st.data_editor(
+            line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
+            column_config={
+                "Service": st.column_config.SelectboxColumn("Service", options=Q.SERVICE_TYPES, width="medium"),
+                "Description": st.column_config.TextColumn("Description", width="large"),
+                "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
+                "Unit": st.column_config.SelectboxColumn("Unit", options=Q.UNITS),
+                "Price": st.column_config.NumberColumn("Price (PHP)", min_value=0.0, format="%.0f"),
+            })
 
         submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
 
     if submitted:
+        valid_lines = [r for _, r in lines.iterrows()
+                       if float(r.get("Price") or 0) > 0 or str(r.get("Service") or "").strip()]
         errors = []
         if not submitted_by.strip():
             errors.append("Your name is required.")
         if not company.strip():
             errors.append("Company name is required.")
-        if price <= 0:
-            errors.append("Enter the price.")
+        if not valid_lines:
+            errors.append("Add at least one service line with a price.")
+        elif any(float(r.get("Price") or 0) <= 0 for r in valid_lines):
+            errors.append("Every service line needs a price.")
         if errors:
             for e in errors:
                 st.error(e)
         else:
-            rec = Q.build_record(
-                submitted_by=submitted_by, quotation_number=quotation_number,
-                issue_date=issue_date, order_date=order_date, company=company,
-                contact_person=contact_person, contact_title=contact_title,
-                contact_email=contact_email, contact_address=contact_address,
-                branch=branch, classification=classification, client_type=client_type,
-                process_of_contact=process, type_of_service=(type_other or type_sel),
-                service_description=service_description, unit=unit, price=price,
-                invoiced_month=invoiced_month)
-            where = Q.save_quotation(rec)
-            st.success(f"Saved order for **{company}** ({price:,.0f} {unit}) to {where}.")
+            records = [
+                Q.build_record(
+                    submitted_by=submitted_by, quotation_number=quotation_number,
+                    issue_date=issue_date, order_date=order_date, company=company,
+                    contact_person=contact_person, contact_title=contact_title,
+                    contact_email=contact_email, contact_address=contact_address,
+                    branch=branch, client_type=client_type, process_of_contact=process,
+                    line_no=i + 1, type_of_service=(r.get("Service") or "Other"),
+                    service_description=r.get("Description"), classification=r.get("Classification"),
+                    unit=r.get("Unit"), price=r.get("Price"), invoiced_month=invoiced_month)
+                for i, r in enumerate(valid_lines)
+            ]
+            where = Q.save_quotations(records)
+            total = sum(rec["price"] for rec in records)
+            st.success(f"Saved **{len(records)} service line(s)** for **{company}** "
+                       f"(total {total:,.0f}) to {where}.")
 
     st.divider()
     st.subheader("Recent ordered quotations")
