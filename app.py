@@ -7,6 +7,7 @@ Run:  streamlit run app.py
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import pandas as pd
 import plotly.express as px
@@ -43,6 +44,16 @@ def _find_logo():
 LOGO_PATH = _find_logo()
 
 st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
+
+# On Streamlit Cloud, secrets are in st.secrets but not always exported as env
+# vars — bridge them so os.getenv() (used across the app) sees them.
+for _k in ("DATABASE_URL", "APP_PASSWORD", "TCF_SMTP_PASSWORD"):
+    try:
+        if _k in st.secrets and not os.getenv(_k):
+            os.environ[_k] = str(st.secrets[_k])
+    except Exception:
+        pass
+
 USER = require_login()
 cfg = load_config()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
