@@ -99,14 +99,16 @@ def render_quotation_form() -> None:
         st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines. "
                    "Set each line's **Invoiced month** (e.g. one line for the initial 50%, another for the final 50%).")
         line_template = pd.DataFrame([
-            {"Service": "", "Description": "", "Classification": "Spot",
-             "Unit": "PHP/Year", "Price": 0.0, "Invoiced month": ""}
+            {"Service": "", "Description": "", "Department": None, "PIC": "",
+             "Classification": "Spot", "Unit": "PHP/Year", "Price": 0.0, "Invoiced month": ""}
         ])
         lines = st.data_editor(
             line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
             column_config={
                 "Service": st.column_config.SelectboxColumn("Service", options=Q.SERVICE_TYPES, width="medium"),
                 "Description": st.column_config.TextColumn("Description", width="large"),
+                "Department": st.column_config.SelectboxColumn("Department", options=Q.DEPARTMENTS),
+                "PIC": st.column_config.TextColumn("PIC", help="Person in charge of this service"),
                 "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
                 "Unit": st.column_config.SelectboxColumn("Unit", options=Q.UNITS),
                 "Price": st.column_config.NumberColumn("Price (PHP)", min_value=0.0, format="%.0f"),
@@ -147,7 +149,8 @@ def render_quotation_form() -> None:
                     contact_person=contact_person, contact_title=contact_title,
                     contact_email=contact_email, contact_address=contact_address,
                     branch=branch, client_type=client_type, process_of_contact=process,
-                    line_no=i + 1, type_of_service=(r.get("Service") or "Other"),
+                    line_no=i + 1, department=r.get("Department"), pic=r.get("PIC"),
+                    type_of_service=(r.get("Service") or "Other"),
                     service_description=r.get("Description"), classification=r.get("Classification"),
                     unit=r.get("Unit"), price=r.get("Price"), invoiced_month=r.get("Invoiced month"),
                     attachments=attach_str)

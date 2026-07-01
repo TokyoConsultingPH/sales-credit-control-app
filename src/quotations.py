@@ -25,13 +25,15 @@ FIELDS = [
     "quotation_number", "issue_date", "order_date", "month",
     "company", "contact_person", "contact_title", "contact_email", "contact_address",
     "branch", "client_type", "process_of_contact",
-    "line_no", "type_of_service", "service_description", "classification", "unit", "price",
+    "line_no", "department", "pic", "type_of_service", "service_description",
+    "classification", "unit", "price",
     "condition", "invoiced_month", "attachments",
 ]
 
 # Dropdown choices (match the workbook's data lists and the quotation document).
 CLASSIFICATIONS = ["Subscribe", "Spot", "AMP"]
 BRANCHES = ["Makati", "Cebu", "AMP"]
+DEPARTMENTS = ["Accounting", "Tax", "Audit", "Legal", "Advisory", "HR / Payroll", "Other"]
 CLIENT_TYPES = ["New", "Existing", "Past"]
 UNITS = ["PHP/Year", "PHP/Month", "PHP/Spot"]
 SERVICE_TYPES = [
@@ -100,7 +102,8 @@ def load_quotations() -> pd.DataFrame:
 def build_record(*, submitted_by, quotation_number, issue_date, order_date,
                  company, contact_person, contact_title, contact_email, contact_address,
                  branch, client_type, process_of_contact,
-                 line_no, type_of_service, service_description, classification, unit, price,
+                 line_no, department, pic, type_of_service, service_description,
+                 classification, unit, price,
                  invoiced_month, attachments="") -> dict:
     """Assemble one service-line record (Condition is always 'Order')."""
     od = pd.to_datetime(order_date, errors="coerce")
@@ -122,6 +125,8 @@ def build_record(*, submitted_by, quotation_number, issue_date, order_date,
         "client_type": client_type,
         "process_of_contact": (process_of_contact or "").strip(),
         "line_no": int(line_no),
+        "department": (department or "").strip(),
+        "pic": (pic or "").strip(),
         "type_of_service": (type_of_service or "").strip(),
         "service_description": (service_description or "").strip(),
         "classification": classification,
