@@ -540,9 +540,31 @@ with t3:
     st.dataframe(od.style.format({"Outstanding": "{:,.0f}"}), use_container_width=True)
 
 with t4:
+    st.markdown("#### 🔔 Final 50% due — from completed engagements")
+    fin = EN.load_notifications(status="pending")
+    if fin.empty:
+        st.info("No final-50% billings pending. Complete an engagement on the "
+                "**✅ Complete Engagement** page to raise one.")
+    else:
+        fin_view = pd.DataFrame({
+            "Company": fin["company"],
+            "Service": fin.get("service", ""),
+            "Quotation": fin.get("quotation_number", ""),
+            "Line": fin.get("line_no", ""),
+            "Final 50%": pd.to_numeric(fin["amount"], errors="coerce"),
+            "Raised": fin["created_at"],
+            "Emailed": fin.get("emailed", ""),
+        })
+        c = st.columns(2)
+        c[0].metric("Engagements awaiting final billing", f"{len(fin_view)}")
+        c[1].metric("Total final 50% due", money(fin_view["Final 50%"].sum()))
+        st.dataframe(fin_view.style.format({"Final 50%": "{:,.0f}"}),
+                     use_container_width=True, hide_index=True)
+
+    st.divider()
     horizon = cfg.get("monitoring", {}).get("billing_due_horizon_days", 14)
-    st.markdown(f"Engagements flagged **can be invoiced** but not yet billed "
-                f"(overdue, or due within {horizon} days).")
+    st.markdown(f"#### 🧾 From the register — flagged **can be invoiced** "
+                f"(overdue, or due within {horizon} days)")
     if due.empty:
         st.info("Nothing due for billing in the window.")
     else:
