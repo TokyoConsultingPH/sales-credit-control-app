@@ -27,8 +27,8 @@ COMPLETION_FIELDS = [
 ]
 NOTIF_FIELDS = [
     "notif_id", "created_at", "type", "engagement_key", "quotation_number", "line_no",
-    "company", "service", "amount", "status", "message", "emailed", "billed_at",
-    "attachments",
+    "company", "service", "amount", "due_month", "status", "message", "emailed",
+    "billed_at", "attachments",
 ]
 
 FINAL_SHARE = 0.5
@@ -47,6 +47,21 @@ def _engagement_key(quotation_number: str, company: str, order_date: str, line_n
     """A key unique to one service line (engagement) within a quotation."""
     q = str(quotation_number or "").strip() or f"{str(company).strip()} @ {str(order_date).strip()}"
     return f"{q} #L{str(line_no).strip() if line_no is not None else '?'}"
+
+
+def normalize_month(s) -> str:
+    """Return a 'YYYY-MM' month string from a date/text, or '' if unparseable."""
+    import re
+    if s is None:
+        return ""
+    txt = str(s).strip()
+    if not txt:
+        return ""
+    m = re.search(r"(\d{4})[-/](\d{1,2})", txt)
+    if m:
+        return f"{m.group(1)}-{int(m.group(2)):02d}"
+    d = pd.to_datetime(txt, errors="coerce")
+    return d.strftime("%Y-%m") if pd.notna(d) else ""
 
 
 # --------------------------------------------------------------------------- #
@@ -139,7 +154,9 @@ def complete_engagement(*, completed_by, engagement_key, quotation_number, line_
         "notif_id": f"BILL-{datetime.now():%Y%m%d%H%M%S}-{str(engagement_key)[:16]}",
         "created_at": now, "type": "final_50_billing", "engagement_key": engagement_key,
         "quotation_number": qn, "line_no": line_no, "company": company, "service": svc,
-        "amount": float(final_amount or 0), "status": "pending",
+        "amount": float(final_amount or 0),
+        "due_month": normalize_month(completion_date) or datetime.now().strftime("%Y-%m"),
+        "status": "pending",
         "message": f"Final 50% billing due: {company} — {svc}{desc} — "
                    f"{float(final_amount or 0):,.0f} ({where})",
         "emailed": False, "billed_at": "", "attachments": attachments or "",
@@ -170,7 +187,7 @@ def has_notification(engagement_key: str, ntype: str) -> bool:
 
 
 def raise_initial_billing(*, engagement_key, quotation_number, line_no, company,
-                          service, amount, created_by="") -> dict | None:
+                          service, amount, due_month="", created_by="") -> dict | None:
     """Flag the initial 50% of an ordered engagement as due for billing.
     Skips if an initial-50% notification already exists for this engagement."""
     if has_notification(engagement_key, "initial_50_billing"):
@@ -178,11 +195,12 @@ def raise_initial_billing(*, engagement_key, quotation_number, line_no, company,
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     qn = str(quotation_number or "").strip()
     svc = (service or "").strip() or "service"
+    dm = normalize_month(due_month) or now[:7]
     notif = {
         "notif_id": f"INIT-{datetime.now():%Y%m%d%H%M%S%f}-{str(engagement_key)[:12]}",
         "created_at": now, "type": "initial_50_billing", "engagement_key": engagement_key,
         "quotation_number": qn, "line_no": line_no, "company": company, "service": svc,
-        "amount": float(amount or 0), "status": "pending",
+        "amount": float(amount or 0), "due_month": dm, "status": "pending",
         "message": f"Initial 50% billing due: {company} — {svc} — "
                    f"{float(amount or 0):,.0f} ({qn or 'no quotation no.'} line {line_no})",
         "emailed": False, "billed_at": "", "attachments": "",

@@ -229,7 +229,7 @@ def render_quotation_form() -> None:
                     engagement_key=ek, quotation_number=rec["quotation_number"],
                     line_no=rec["line_no"], company=rec["company"],
                     service=rec["type_of_service"], amount=rec["price"] * EN.FINAL_SHARE,
-                    created_by=rec["submitted_by"])
+                    due_month=rec.get("invoiced_month"), created_by=rec["submitted_by"])
                 flagged += 1 if n else 0
             total = sum(rec["price"] for rec in records)
             extra = f", {len(stored)} file(s) attached" if stored else ""
@@ -803,8 +803,17 @@ summary = M.department_summary(df, cfg)
 total_inv = df["invoiced"].sum()
 total_rec = df["received"].sum()
 total_ar = df["outstanding"].sum()
-due = M.due_for_billing(df, cfg, as_of)
-due_amt = float(due["Amount"].sum()) if (not due.empty and "Amount" in due) else 0.0
+# Due for billing = pending billing notifications (reported quotations + completed
+# engagements) whose due month is the current (as-of) month.
+_cur_month = as_of.strftime("%Y-%m")
+_bill = EN.load_notifications(status="pending")
+if not _bill.empty:
+    _bill = _bill.copy()
+    _bill["DueMonth"] = _bill["due_month"].map(EN.normalize_month)
+    due = _bill[_bill["DueMonth"] == _cur_month]
+else:
+    due = _bill
+due_amt = pd.to_numeric(due["amount"], errors="coerce").sum() if not due.empty else 0.0
 od = M.overdue_detail(df, cfg, as_of)
 hr = od[od["High Risk"]] if not od.empty else od
 hr_amt = float(hr["Outstanding"].sum()) if not hr.empty else 0.0
@@ -859,7 +868,8 @@ _kpi(k[3], "Outstanding AR", money_compact(total_ar),
      "off", help=money(total_ar))
 _kpi(k[4], "High-risk overdue", money_compact(hr_amt), f"{len(hr)} items",
      "off", help=money(hr_amt))
-_kpi(k[5], "Due for billing", f"{len(due)} items", money(due_amt), "off")
+_kpi(k[5], "Due for billing", f"{len(due)} items", money(due_amt), "off",
+     help=f"Current month ({_cur_month}) — reported quotations + completions.")
 
 # --------------------------------------------------------------------------- #
 # At a glance
@@ -1064,81 +1074,38 @@ with t3:
     st.dataframe(od.style.format({"Outstanding": "{:,.0f}"}), use_container_width=True)
 
 with t4:
-    st.markdown("#### 🔔 Billing due — initial & final 50% (from quotations & completions)")
+    st.markdown("#### 🔔 Due for billing — reported quotations (initial 50%) & "
+                "completed engagements (final 50%)")
+    only_cur = st.checkbox(f"Current month only ({_cur_month})", value=True)
     fin = EN.load_notifications(status="pending")
     if fin.empty:
-        st.info("No billing items pending. Submit a quotation (flags the initial 50%) "
-                "or complete an engagement (flags the final 50%).")
+        st.info("Nothing due. Submit a quotation (flags the initial 50%) or complete an "
+                "engagement (flags the final 50%).")
     else:
-        _stage = fin["type"].map({"initial_50_billing": "Initial 50%",
-                                  "final_50_billing": "Final 50%"}).fillna(fin["type"])
-        fin_view = pd.DataFrame({
-            "Stage": _stage,
-            "Company": fin["company"],
-            "Service": fin.get("service", ""),
-            "Quotation": fin.get("quotation_number", ""),
-            "Line": fin.get("line_no", ""),
-            "Amount": pd.to_numeric(fin["amount"], errors="coerce"),
-            "Raised": fin["created_at"],
-        })
-        c = st.columns(3)
-        c[0].metric("Billing items pending", f"{len(fin_view)}")
-        c[1].metric("Initial 50% due",
-                    money_compact(fin_view.loc[fin_view["Stage"] == "Initial 50%", "Amount"].sum()))
-        c[2].metric("Final 50% due",
-                    money_compact(fin_view.loc[fin_view["Stage"] == "Final 50%", "Amount"].sum()))
-        st.dataframe(fin_view.style.format({"Amount": "{:,.0f}"}),
-                     use_container_width=True, hide_index=True)
-
-    st.divider()
-    horizon = cfg.get("monitoring", {}).get("billing_due_horizon_days", 14)
-    st.markdown(f"#### 🧾 From the register — flagged **can be invoiced** "
-                f"(overdue, or due within {horizon} days)")
-    if due.empty:
-        st.info("Nothing due for billing in the window.")
-    else:
-        mcol = st.columns(2)
-        mcol[0].metric("Total billable not yet invoiced", f"{len(due)} engagements")
-        mcol[1].metric("Total amount", money_compact(due["Amount"].sum()),
-                       help=money(due["Amount"].sum()))
-        st.caption("Edit **Status** to move an engagement through the workflow: "
-                   "Ordered → Can be invoiced → Invoiced → Collected. Changes are saved.")
-
-        keys = due["Key"].tolist()
-        overrides = BS.load_overrides()
-        disp = due.drop(columns=["Key"]).copy()
-        disp["Status"] = [overrides.get(k, BS.flow_status(s))
-                          for k, s in zip(keys, disp["Status"])]
-
-        st.markdown("**Amounts by status**")
-        by_status = disp.groupby("Status")["Amount"].agg(["sum", "size"])
-        scols = st.columns(len(BS.STATUS_FLOW))
-        for i, stt in enumerate(BS.STATUS_FLOW):
-            amt = float(by_status["sum"].get(stt, 0.0))
-            cnt = int(by_status["size"].get(stt, 0))
-            scols[i].metric(f"{stt} · {cnt}", money_compact(amt), help=money(amt))
-
-        hide_collected = st.checkbox("Hide collected", value=True)
-        if hide_collected:
-            mask = (disp["Status"] != "Collected").tolist()
-            disp = disp[mask].reset_index(drop=True)
-            keys = [k for k, keep in zip(keys, mask) if keep]
-            n_hidden = mask.count(False)
-            if n_hidden:
-                st.caption(f"{n_hidden} collected engagement(s) hidden.")
-
-        edited = st.data_editor(
-            disp, use_container_width=True, hide_index=True, key="due_status_editor",
-            disabled=[c for c in disp.columns if c != "Status"],
-            column_config={
-                "Amount": st.column_config.NumberColumn("Amount", format="%.0f"),
-                "Status": st.column_config.SelectboxColumn(
-                    "Status", options=BS.STATUS_FLOW, required=True),
+        fin = fin.copy()
+        fin["DueMonth"] = fin["due_month"].map(EN.normalize_month)
+        fin["Stage"] = fin["type"].map({"initial_50_billing": "Initial 50%",
+                                        "final_50_billing": "Final 50%"}).fillna(fin["type"])
+        view = fin[fin["DueMonth"] == _cur_month] if only_cur else fin
+        if view.empty:
+            st.info(f"No billables due in {_cur_month}. Untick 'Current month only' to see all.")
+        else:
+            tbl = pd.DataFrame({
+                "Stage": view["Stage"],
+                "Company": view["company"],
+                "Service": view.get("service", ""),
+                "Quotation": view.get("quotation_number", ""),
+                "Line": view.get("line_no", ""),
+                "Amount": pd.to_numeric(view["amount"], errors="coerce"),
+                "Due month": view["DueMonth"],
+                "Raised": view["created_at"],
             })
-        changed = 0
-        for k, old, new in zip(keys, disp["Status"], edited["Status"]):
-            if str(new) != str(old):
-                BS.set_status(k, str(new), current_user().get("name", ""))
-                changed += 1
-        if changed:
-            st.success(f"Saved {changed} status change(s).")
+            c = st.columns(3)
+            c[0].metric("Billables", f"{len(tbl)}")
+            c[1].metric("Initial 50%",
+                        money_compact(tbl.loc[tbl["Stage"] == "Initial 50%", "Amount"].sum()))
+            c[2].metric("Final 50%",
+                        money_compact(tbl.loc[tbl["Stage"] == "Final 50%", "Amount"].sum()))
+            st.dataframe(tbl.style.format({"Amount": "{:,.0f}"}),
+                         use_container_width=True, hide_index=True)
+            st.caption("Mark items billed on the **✅ Complete Engagement** page.")
