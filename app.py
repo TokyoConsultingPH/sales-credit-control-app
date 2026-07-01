@@ -960,6 +960,11 @@ with lb[2]:
 # Alerts
 # --------------------------------------------------------------------------- #
 alerts = M.build_alerts(df, cfg, as_of)
+# Billing alerts from reported quotations + completions (same source as Due for Billing).
+_bill_for_alerts = _bill.copy() if (_bill is not None and not _bill.empty) else pd.DataFrame()
+if not _bill_for_alerts.empty and "DueMonth" not in _bill_for_alerts.columns:
+    _bill_for_alerts["DueMonth"] = _bill_for_alerts["due_month"].map(EN.normalize_month)
+alerts = M.sort_alerts(alerts + M.billing_alerts(_bill_for_alerts, _cur_month))
 st.markdown("#### Monitoring")
 if not alerts:
     st.success("✅ No alerts — all departments within thresholds.")

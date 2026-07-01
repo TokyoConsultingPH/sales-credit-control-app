@@ -229,20 +229,38 @@ def build_alerts(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = None)
                            f"{sub['Outstanding'].sum():,.0f} outstanding.",
             })
 
-    # 4. Billing due.
-    due = due_for_billing(df, cfg, as_of)
-    if not due.empty:
-        overdue_bill = due[due["Days Until Due"] < 0]
-        for dept, sub in due.groupby("Department"):
-            n_over = (sub["Days Until Due"] < 0).sum()
-            sev = "high" if n_over else "low"
-            alerts.append({
-                "severity": sev,
-                "category": "Billing",
-                "department": dept,
-                "message": f"{dept}: {len(sub)} engagement(s) due for billing"
-                           + (f" ({n_over} overdue)." if n_over else " soon."),
-            })
+    # Billing alerts are added by the app from reported quotations + completions
+    # (see billing_alerts()), so they reflect the same source as Due for Billing.
+    return sort_alerts(alerts)
 
+
+def sort_alerts(alerts: list[dict]) -> list[dict]:
     sev_order = {"high": 0, "medium": 1, "low": 2}
     return sorted(alerts, key=lambda a: sev_order.get(a["severity"], 3))
+
+
+def billing_alerts(pending: pd.DataFrame, current_month: str) -> list[dict]:
+    """Billing alerts from pending billing notifications (reported quotations +
+    completed engagements). `pending` needs 'DueMonth' and 'amount' columns."""
+    alerts: list[dict] = []
+    if pending is None or pending.empty:
+        return alerts
+    amt = pd.to_numeric(pending["amount"], errors="coerce").fillna(0.0)
+    dm = pending["DueMonth"].astype(str)
+    overdue = pending[(dm != "") & (dm < current_month)]
+    current = pending[dm == current_month]
+    if not overdue.empty:
+        o_amt = pd.to_numeric(overdue["amount"], errors="coerce").sum()
+        alerts.append({
+            "severity": "high", "category": "Billing", "department": "",
+            "message": f"{len(overdue)} billable(s) overdue for billing "
+                       f"(due before {current_month}), {o_amt:,.0f} total.",
+        })
+    if not current.empty:
+        c_amt = pd.to_numeric(current["amount"], errors="coerce").sum()
+        alerts.append({
+            "severity": "medium", "category": "Billing", "department": "",
+            "message": f"{len(current)} billable(s) due this month ({current_month}), "
+                       f"{c_amt:,.0f} total.",
+        })
+    return alerts
