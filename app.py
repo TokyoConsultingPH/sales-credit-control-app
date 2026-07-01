@@ -226,21 +226,22 @@ def render_complete_engagement() -> None:
             f"· {r.company} · fee {r.engagement_fee:,.0f}": r
             for r in pend.itertuples()
         }
+        # Selector is OUTSIDE the form so the fee/detail update live on change.
+        choice = st.selectbox("Engagement to complete (one service line)", list(labels))
+        row = labels[choice]
+        final_amt = round(float(row.engagement_fee) * EN.FINAL_SHARE, 2)
+
+        st.markdown(
+            f"**Engagement being completed**  \n"
+            f"🏢 {row.company} · {row.branch}  \n"
+            f"🧾 Quotation **{row.quotation_number or 'no quotation no.'}**, line **{row.line_no}**  \n"
+            f"🛠️ **{row.type_of_service}**"
+            + (f" — {row.service_description}" if str(row.service_description).strip() else ""))
+        m1, m2 = st.columns(2)
+        m1.metric("Engagement fee", f"{row.engagement_fee:,.0f}")
+        m2.metric("Final 50% to bill", f"{final_amt:,.0f}")
+
         with st.form("complete_engagement", clear_on_submit=True):
-            choice = st.selectbox("Engagement to complete (one service line)", list(labels))
-            row = labels[choice]
-            final_amt = round(float(row.engagement_fee) * EN.FINAL_SHARE, 2)
-
-            st.markdown(
-                f"**Engagement being completed**  \n"
-                f"🏢 {row.company} · {row.branch}  \n"
-                f"🧾 Quotation **{row.quotation_number or 'no quotation no.'}**, line **{row.line_no}**  \n"
-                f"🛠️ **{row.type_of_service}**"
-                + (f" — {row.service_description}" if str(row.service_description).strip() else ""))
-            m1, m2 = st.columns(2)
-            m1.metric("Engagement fee", f"{row.engagement_fee:,.0f}")
-            m2.metric("Final 50% to bill", f"{final_amt:,.0f}")
-
             c1, c2 = st.columns(2)
             completed_by = c1.text_input("Your name *")
             completion_date = c2.date_input("Completion date", value=pd.Timestamp.today())
