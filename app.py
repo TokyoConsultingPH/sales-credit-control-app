@@ -699,6 +699,14 @@ with t4:
         disp["Status"] = [overrides.get(k, BS.flow_status(s))
                           for k, s in zip(keys, disp["Status"])]
 
+        st.markdown("**Amounts by status**")
+        by_status = disp.groupby("Status")["Amount"].agg(["sum", "size"])
+        scols = st.columns(len(BS.STATUS_FLOW))
+        for i, stt in enumerate(BS.STATUS_FLOW):
+            amt = float(by_status["sum"].get(stt, 0.0))
+            cnt = int(by_status["size"].get(stt, 0))
+            scols[i].metric(f"{stt} · {cnt}", money(amt))
+
         hide_collected = st.checkbox("Hide collected", value=True)
         if hide_collected:
             mask = (disp["Status"] != "Collected").tolist()
