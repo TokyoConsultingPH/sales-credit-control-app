@@ -17,11 +17,13 @@ import pandas as pd
 
 from src import quotations as Q
 from src import engagements as EN
+from src import security
 
 ROOT = Path(__file__).resolve().parent.parent
 USERS_CSV = ROOT / "data" / "users.csv"
 USERS_TABLE = "app_users"
-USER_FIELDS = ["name", "role", "added_at"]
+USER_FIELDS = ["username", "name", "role", "salt", "pw_hash", "added_at"]
+DISPLAY_FIELDS = ["username", "name", "role", "added_at"]
 ROLES = ["Staff", "Manager", "Admin"]
 
 
@@ -48,29 +50,72 @@ def list_users() -> pd.DataFrame:
     return EN._read(USERS_CSV, USERS_TABLE, USER_FIELDS)
 
 
-def add_user(name: str, role: str) -> None:
-    name = (name or "").strip()
-    if not name:
-        return
-    existing = list_users()
-    if not existing.empty and name.lower() in existing["name"].astype(str).str.lower().tolist():
-        return
-    row = pd.DataFrame([{"name": name, "role": role,
-                         "added_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}],
-                       columns=USER_FIELDS)
+def list_users_display() -> pd.DataFrame:
+    df = list_users()
+    return df[[c for c in DISPLAY_FIELDS if c in df.columns]] if not df.empty else \
+        pd.DataFrame(columns=DISPLAY_FIELDS)
+
+
+def get_user(username: str) -> dict | None:
+    df = list_users()
+    if df.empty or not username:
+        return None
+    m = df[df["username"].astype(str).str.lower() == str(username).strip().lower()]
+    return m.iloc[0].to_dict() if not m.empty else None
+
+
+def add_user(username: str, name: str, role: str, password: str) -> tuple[bool, str]:
+    username = (username or "").strip()
+    if not username or not password:
+        return False, "Username and password are required."
+    if get_user(username):
+        return False, f"User '{username}' already exists."
+    salt, pw_hash = security.hash_password(password)
+    row = pd.DataFrame([{
+        "username": username, "name": (name or username).strip(), "role": role,
+        "salt": salt, "pw_hash": pw_hash,
+        "added_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }], columns=USER_FIELDS)
     EN._append(row, USERS_CSV, USERS_TABLE)
+    return True, f"User '{username}' added."
 
 
-def remove_user(name: str) -> None:
+def set_password(username: str, password: str) -> None:
+    salt, pw_hash = security.hash_password(password)
     if _use_db():
         from sqlalchemy import text
         with _engine().begin() as conn:
-            conn.execute(text(f"DELETE FROM {USERS_TABLE} WHERE name = :n"), {"n": name})
+            conn.execute(text(f"UPDATE {USERS_TABLE} SET salt=:s, pw_hash=:h WHERE username=:u"),
+                         {"s": salt, "h": pw_hash, "u": username})
         return
     df = list_users()
     if df.empty:
         return
-    df = df[df["name"].astype(str) != str(name)]
+    df = df.astype(object)
+    mask = df["username"].astype(str).str.lower() == str(username).lower()
+    df.loc[mask, "salt"] = salt
+    df.loc[mask, "pw_hash"] = pw_hash
+    df.to_csv(USERS_CSV, index=False, encoding="utf-8-sig")
+
+
+def verify_login(username: str, password: str) -> dict | None:
+    u = get_user(username)
+    if u and security.verify_password(password, u.get("salt", ""), u.get("pw_hash", "")):
+        return {"username": u["username"], "name": u.get("name") or u["username"],
+                "role": u.get("role", "Staff"), "master": False}
+    return None
+
+
+def remove_user(username: str) -> None:
+    if _use_db():
+        from sqlalchemy import text
+        with _engine().begin() as conn:
+            conn.execute(text(f"DELETE FROM {USERS_TABLE} WHERE username = :n"), {"n": username})
+        return
+    df = list_users()
+    if df.empty:
+        return
+    df = df[df["username"].astype(str) != str(username)]
     df.to_csv(USERS_CSV, index=False, encoding="utf-8-sig")
 
 

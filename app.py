@@ -23,13 +23,13 @@ from src import attachments as AT
 from src import engagements as EN
 from src import notify_email as MAIL
 from src import registry as REG
-from src.auth import require_password
+from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
 SAMPLE = ROOT / "data" / "sample_sales.csv"
 
 st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
-require_password()
+USER = require_login()
 cfg = load_config()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
 
@@ -72,7 +72,7 @@ def render_quotation_form() -> None:
         st.markdown("##### 1 · Quotation")
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            submitted_by = st.text_input("Your name *")
+            submitted_by = st.text_input("Your name *", value=current_user().get("name", ""))
         with c2:
             quotation_number = st.text_input("Quotation no.", placeholder="Q-TCF-PM-26-122")
         with c3:
@@ -247,7 +247,7 @@ def render_complete_engagement() -> None:
 
         with st.form("complete_engagement", clear_on_submit=True):
             c1, c2 = st.columns(2)
-            completed_by = c1.text_input("Your name *")
+            completed_by = c1.text_input("Your name *", value=current_user().get("name", ""))
             completion_date = c2.date_input("Completion date", value=pd.Timestamp.today())
             notes = st.text_area("Completion notes", placeholder="Report submitted, deliverables sent…")
             noc_files = st.file_uploader(
@@ -288,22 +288,35 @@ def render_manage_users() -> None:
 
     st.subheader("Employee roster")
     with st.form("add_user", clear_on_submit=True):
-        a, b, c = st.columns([3, 2, 1])
-        uname = a.text_input("Name")
-        urole = b.selectbox("Role", REG.ROLES)
-        c.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        if c.form_submit_button("Add", use_container_width=True):
-            REG.add_user(uname, urole)
-            st.rerun()
-    users = REG.list_users()
+        a, b = st.columns(2)
+        new_username = a.text_input("Username *")
+        new_name = b.text_input("Full name")
+        c, d = st.columns(2)
+        new_role = c.selectbox("Role", REG.ROLES)
+        new_pw = d.text_input("Password *", type="password")
+        if st.form_submit_button("Add user", type="primary"):
+            ok, msg = REG.add_user(new_username, new_name, new_role, new_pw)
+            (st.success if ok else st.error)(msg)
+            if ok:
+                st.rerun()
+
+    users = REG.list_users_display()
     if users.empty:
-        st.caption("No users added yet. Names typed into forms still appear in activity below.")
+        st.caption("No users yet.")
     else:
         st.dataframe(users, use_container_width=True, hide_index=True)
-        rm = st.selectbox("Remove a user", ["—"] + users["name"].astype(str).tolist())
-        if rm != "—" and st.button(f"Remove {rm}"):
-            REG.remove_user(rm)
-            st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            rm = st.selectbox("Remove a user", ["—"] + users["username"].astype(str).tolist())
+            if rm != "—" and st.button(f"Remove {rm}"):
+                REG.remove_user(rm)
+                st.rerun()
+        with col2:
+            ru = st.selectbox("Reset password for", ["—"] + users["username"].astype(str).tolist())
+            rp = st.text_input("New password", type="password", key="resetpw")
+            if ru != "—" and rp and st.button("Reset password"):
+                REG.set_password(ru, rp)
+                st.success(f"Password reset for {ru}.")
 
     st.divider()
     st.subheader("Activity — who reported which engagements")
@@ -367,10 +380,18 @@ def render_client_database() -> None:
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 
+_is_admin = USER.get("role") == "Admin" or USER.get("master")
+st.sidebar.success(f"👤 {USER.get('name', 'User')} · {USER.get('role', '')}")
+if st.sidebar.button("Log out", use_container_width=True):
+    logout()
+    st.rerun()
+
 _pending_badge = EN.pending_count()
 _complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
-page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label,
-                                 "👥 Manage Users", "🗂️ Client Database"])
+_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label, "🗂️ Client Database"]
+if _is_admin:
+    _pages.append("👥 Manage Users")
+page = st.sidebar.radio("Page", _pages)
 st.sidebar.divider()
 if page == "📝 Report Ordered Quotation":
     render_quotation_form()
