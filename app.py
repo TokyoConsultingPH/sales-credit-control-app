@@ -420,7 +420,8 @@ if db_enabled:
 sources += ["Upload a file", "Demo data"]
 source = st.sidebar.radio("Data source", sources)
 
-df = None          # canonical frame for monitoring
+df = None          # canonical frame for monitoring (selected years)
+df_full = None     # canonical frame across ALL years (for YoY / YTD comparison)
 source_label = ""
 dim_label = "Branch"
 
@@ -432,6 +433,7 @@ if source == "TCF workbook (this file)":
     dim_label = st.sidebar.radio("Group by (department)", list(DIMENSIONS), index=0)
     sub = tidy[tidy["year"].isin(sel_years)] if sel_years else tidy
     df = W.to_canonical(sub, DIMENSIONS[dim_label])
+    df_full = W.to_canonical(tidy, DIMENSIONS[dim_label])
 
 elif source == "Database (PostgreSQL)":
     import os as _os
@@ -496,6 +498,9 @@ elif source == "Database (PostgreSQL)":
         sel_years = st.sidebar.multiselect("Year(s)", years, default=years[-1:])
         tidy = tidy[tidy["year"].isin(sel_years)] if sel_years else tidy
     df = DB.to_canonical(tidy, dim_field)
+    _full_tidy = st.session_state.get("db_tidy")
+    if _full_tidy is not None:
+        df_full = DB.to_canonical(_full_tidy, dim_field)
 
 elif source == "Upload a file":
     up = st.sidebar.file_uploader("Upload Excel/CSV", type=["csv", "xlsx", "xls"])
@@ -510,6 +515,7 @@ elif source == "Upload a file":
             dim_label = st.sidebar.radio("Group by (department)", list(DIMENSIONS), index=0)
             sub = tidy[tidy["year"].isin(sel_years)] if sel_years else tidy
             df = W.to_canonical(sub, DIMENSIONS[dim_label])
+            df_full = W.to_canonical(tidy, DIMENSIONS[dim_label])
         else:
             df = DL.load_data(up, cfg, filename=up.name)
             dim_label = "Department"
@@ -527,6 +533,9 @@ else:  # Demo data
     dim_label = "Department"
 
 as_of = pd.Timestamp(st.sidebar.date_input("Monitoring 'as of' date", value=pd.Timestamp("2026-06-30")))
+
+if df_full is None:
+    df_full = df
 
 # Bound analysis to realized billings up to the 'as of' date (exclude future
 # scheduled months so KPIs, trends and AR reflect the reporting date).
@@ -581,12 +590,20 @@ od = M.overdue_detail(df, cfg, as_of)
 hr = od[od["High Risk"]] if not od.empty else od
 hr_amt = float(hr["Outstanding"].sum()) if not hr.empty else 0.0
 coll_pct = (total_rec / total_inv * 100) if total_inv else 0.0
-# Year-to-date sales: billed from Jan 1 of the as-of year through as_of.
-if "date" in df.columns and df["date"].notna().any():
-    _ytd_start = pd.Timestamp(year=as_of.year, month=1, day=1)
-    ytd_sales = df.loc[df["date"] >= _ytd_start, "invoiced"].sum()
-else:
-    ytd_sales = total_inv
+
+# Year-to-date sales + prior-year same-period comparison (from the all-years frame,
+# so it works even when only the current year is selected).
+ytd_sales, ytd_prior, yoy_ytd = total_inv, 0.0, None
+if df_full is not None and "date" in df_full.columns and df_full["date"].notna().any():
+    _base = df_full[df_full["department"].isin(chosen)] if chosen else df_full
+    _y = as_of.year
+    _prior_asof = as_of - pd.DateOffset(years=1)
+    ytd_sales = _base.loc[(_base["date"] >= pd.Timestamp(_y, 1, 1))
+                          & (_base["date"] <= as_of), "invoiced"].sum()
+    ytd_prior = _base.loc[(_base["date"] >= pd.Timestamp(_y - 1, 1, 1))
+                          & (_base["date"] <= _prior_asof), "invoiced"].sum()
+    if ytd_prior:
+        yoy_ytd = (ytd_sales - ytd_prior) / ytd_prior * 100
 
 # Monthly totals (for the MoM delta and the trend chart).
 _mt = df.dropna(subset=["date"]).copy()
@@ -606,7 +623,10 @@ def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
 
 k = st.columns(6)
 _kpi(k[0], f"YTD sales ({as_of.year})", money(ytd_sales),
-     f"through {as_of.date()}", "off", help="Billed from Jan 1 to the as-of date.")
+     f"{yoy_ytd:+.0f}% vs {as_of.year - 1}" if yoy_ytd is not None else f"through {as_of.date()}",
+     "normal" if yoy_ytd is not None else "off",
+     help=f"Jan 1–{as_of.date()} vs the same period in {as_of.year - 1} "
+          f"({money(ytd_prior)}).")
 _kpi(k[1], "Billed (selected)", money(total_inv),
      f"{mom:+.0f}% MoM" if mom is not None else None)
 _kpi(k[2], "Collected", money(total_rec), f"{coll_pct:.0f}% collection rate", "off")
