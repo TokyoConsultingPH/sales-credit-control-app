@@ -645,7 +645,7 @@ if _pending:
 # Drill-down view: when a leaderboard item is selected, show its detail page.
 _drill = st.session_state.get("drill")
 if _drill:
-    if st.button("← Back to dashboard"):
+    if st.button("← Back to dashboard", key="back_top"):
         st.session_state.pop("drill", None)
         st.rerun()
     if _drill["type"] == "client":
@@ -655,6 +655,10 @@ if _drill:
     else:
         _lab = df["engagement"].astype(str) + " · " + df["client"].astype(str)
         _sales_detail(f"Engagement: {_drill['value']}", df[_lab == _drill["value"]])
+    st.divider()
+    if st.button("← Back to dashboard", key="back_bottom", use_container_width=True):
+        st.session_state.pop("drill", None)
+        st.rerun()
     st.stop()
 
 summary = M.department_summary(df, cfg)
