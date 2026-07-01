@@ -259,8 +259,9 @@ def render_complete_engagement() -> None:
             f"🛠️ **{row.type_of_service}**"
             + (f" — {row.service_description}" if str(row.service_description).strip() else ""))
         m1, m2 = st.columns(2)
-        m1.metric("Engagement fee", f"{row.engagement_fee:,.0f}")
-        m2.metric("Final 50% to bill", f"{final_amt:,.0f}")
+        m1.metric("Engagement fee", money_compact(row.engagement_fee),
+                  help=money(row.engagement_fee))
+        m2.metric("Final 50% to bill", money_compact(final_amt), help=money(final_amt))
 
         with st.form("complete_engagement", clear_on_submit=True):
             c1, c2 = st.columns(2)
@@ -368,7 +369,8 @@ def render_client_database() -> None:
     m = st.columns(3)
     m[0].metric("Clients", f"{len(view)}")
     m[1].metric("Engagements", f"{int(view['Engagements'].sum())}")
-    m[2].metric("Total value", money(view["Total value"].sum()))
+    m[2].metric("Total value", money_compact(view["Total value"].sum()),
+                help=money(view["Total value"].sum()))
     st.dataframe(view.style.format({"Total value": "{:,.0f}"}),
                  use_container_width=True, hide_index=True)
     st.download_button("⬇️ Download client database (CSV)",
@@ -800,10 +802,11 @@ with t2:
         cyt = yoy[yoy["Year"] == str(cur_y)]["invoiced"].sum()
         pyt = yoy[yoy["Year"] == str(cur_y - 1)]["invoiced"].sum()
         mc = st.columns(2)
-        mc[0].metric(f"{_months[latest - 1]} {cur_y} vs {cur_y - 1}", money(cur_v),
-                     f"{(cur_v - prev_v) / prev_v * 100:+.0f}%" if prev_v else "—")
-        mc[1].metric(f"{cur_y} vs {cur_y - 1} (full-year to date)", money(cyt),
-                     f"{(cyt - pyt) / pyt * 100:+.0f}%" if pyt else "—")
+        mc[0].metric(f"{_months[latest - 1]} {cur_y} vs {cur_y - 1}", money_compact(cur_v),
+                     f"{(cur_v - prev_v) / prev_v * 100:+.0f}%" if prev_v else "—",
+                     help=money(cur_v))
+        mc[1].metric(f"{cur_y} vs {cur_y - 1} (full-year to date)", money_compact(cyt),
+                     f"{(cyt - pyt) / pyt * 100:+.0f}%" if pyt else "—", help=money(cyt))
 
     st.divider()
     trend = M.monthly_trend(df)
@@ -855,7 +858,8 @@ with t4:
         })
         c = st.columns(2)
         c[0].metric("Engagements awaiting final billing", f"{len(fin_view)}")
-        c[1].metric("Total final 50% due", money(fin_view["Final 50%"].sum()))
+        c[1].metric("Total final 50% due", money_compact(fin_view["Final 50%"].sum()),
+                    help=money(fin_view["Final 50%"].sum()))
         st.dataframe(fin_view.style.format({"Final 50%": "{:,.0f}"}),
                      use_container_width=True, hide_index=True)
 
@@ -868,7 +872,8 @@ with t4:
     else:
         mcol = st.columns(2)
         mcol[0].metric("Total billable not yet invoiced", f"{len(due)} engagements")
-        mcol[1].metric("Total amount", money(due["Amount"].sum()))
+        mcol[1].metric("Total amount", money_compact(due["Amount"].sum()),
+                       help=money(due["Amount"].sum()))
         st.caption("Edit **Status** to move an engagement through the workflow: "
                    "Ordered → Can be invoiced → Invoiced → Collected. Changes are saved.")
 
@@ -884,7 +889,7 @@ with t4:
         for i, stt in enumerate(BS.STATUS_FLOW):
             amt = float(by_status["sum"].get(stt, 0.0))
             cnt = int(by_status["size"].get(stt, 0))
-            scols[i].metric(f"{stt} · {cnt}", money(amt))
+            scols[i].metric(f"{stt} · {cnt}", money_compact(amt), help=money(amt))
 
         hide_collected = st.checkbox("Hide collected", value=True)
         if hide_collected:
