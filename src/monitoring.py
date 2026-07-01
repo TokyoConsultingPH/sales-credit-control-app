@@ -145,8 +145,10 @@ def due_for_billing(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = No
     cutoff = as_of + pd.Timedelta(days=horizon)
 
     has_taxonomy = "branch" in df.columns and "category" in df.columns
+    has_class = "classification" in df.columns
+    who_col = "Classification" if has_class else "Manager"
     lead = ["Branch", "Department"] if has_taxonomy else ["Department"]
-    result_cols = lead + ["Client", "Engagement", "Manager", "Amount",
+    result_cols = lead + ["Client", "Engagement", who_col, "Amount",
                           "NextBillingDate", "Status", "Days Until Due", "Key"]
 
     d = df.dropna(subset=["next_billing_date"]).copy()
@@ -163,7 +165,7 @@ def due_for_billing(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = No
         out["Department"] = d["department"]
     out["Client"] = d["client"]
     out["Engagement"] = d["engagement"]
-    out["Manager"] = d["manager"]
+    out[who_col] = d["classification"] if has_class else d["manager"]
     amount = d["amount"] if "amount" in d.columns else d.get("invoiced", 0)
     out["Amount"] = pd.to_numeric(amount, errors="coerce").fillna(0.0).values
     out["NextBillingDate"] = d["next_billing_date"]
