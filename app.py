@@ -45,6 +45,22 @@ def money(x) -> str:
         return "-"
 
 
+def money_compact(x) -> str:
+    """Short currency for KPI cards, e.g. PHP 22.3M / 1.31M / 698K."""
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return "-"
+    a = abs(x)
+    if a >= 1e9:
+        return f"{CUR}{x / 1e9:.2f}B"
+    if a >= 1e6:
+        return f"{CUR}{x / 1e6:.2f}M"
+    if a >= 1e3:
+        return f"{CUR}{x / 1e3:.0f}K"
+    return f"{CUR}{x:,.0f}"
+
+
 def find_tcf_workbook() -> Path | None:
     for folder in ("Sample file", "data"):
         for p in sorted((ROOT / folder).glob("*.xlsx")):
@@ -621,18 +637,25 @@ def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
         st.metric(label, value, delta=delta, delta_color=delta_color, help=help)
 
 
+st.markdown(
+    "<style>[data-testid='stMetricValue']{font-size:1.7rem;}</style>",
+    unsafe_allow_html=True)
+
 k = st.columns(6)
-_kpi(k[0], f"YTD sales ({as_of.year})", money(ytd_sales),
+_kpi(k[0], f"YTD sales ({as_of.year})", money_compact(ytd_sales),
      f"{yoy_ytd:+.0f}% vs {as_of.year - 1}" if yoy_ytd is not None else f"through {as_of.date()}",
      "normal" if yoy_ytd is not None else "off",
-     help=f"Jan 1–{as_of.date()} vs the same period in {as_of.year - 1} "
+     help=f"{money(ytd_sales)} · Jan 1–{as_of.date()} vs same period {as_of.year - 1} "
           f"({money(ytd_prior)}).")
-_kpi(k[1], "Billed (selected)", money(total_inv),
-     f"{mom:+.0f}% MoM" if mom is not None else None)
-_kpi(k[2], "Collected", money(total_rec), f"{coll_pct:.0f}% collection rate", "off")
-_kpi(k[3], "Outstanding AR", money(total_ar),
-     f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else None, "off")
-_kpi(k[4], "High-risk overdue", money(hr_amt), f"{len(hr)} items", "off")
+_kpi(k[1], "Billed (selected)", money_compact(total_inv),
+     f"{mom:+.0f}% MoM" if mom is not None else None, help=money(total_inv))
+_kpi(k[2], "Collected", money_compact(total_rec), f"{coll_pct:.0f}% collection rate",
+     "off", help=money(total_rec))
+_kpi(k[3], "Outstanding AR", money_compact(total_ar),
+     f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else None,
+     "off", help=money(total_ar))
+_kpi(k[4], "High-risk overdue", money_compact(hr_amt), f"{len(hr)} items",
+     "off", help=money(hr_amt))
 _kpi(k[5], "Due for billing", f"{len(due)} items", money(due_amt), "off")
 
 # --------------------------------------------------------------------------- #
