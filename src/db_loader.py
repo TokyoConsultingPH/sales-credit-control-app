@@ -142,6 +142,7 @@ def to_canonical(tidy: pd.DataFrame, dimension: str) -> pd.DataFrame:
         out["branch"] = tidy["branch"]
     if "category" in tidy.columns:
         out["category"] = tidy["category"]
+    out["amount"] = tidy["invoiced"]
     return out
 
 

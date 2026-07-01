@@ -23,6 +23,7 @@ from src import attachments as AT
 from src import engagements as EN
 from src import notify_email as MAIL
 from src import registry as REG
+from src import billing_status as BS
 from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
@@ -686,5 +687,29 @@ with t4:
     if due.empty:
         st.info("Nothing due for billing in the window.")
     else:
-        st.metric("Total billable not yet invoiced", f"{len(due)} engagements")
-        st.dataframe(due, use_container_width=True)
+        mcol = st.columns(2)
+        mcol[0].metric("Total billable not yet invoiced", f"{len(due)} engagements")
+        mcol[1].metric("Total amount", money(due["Amount"].sum()))
+        st.caption("Edit **Status** to move an engagement through the workflow: "
+                   "Ordered → Can be invoiced → Invoiced → Collected. Changes are saved.")
+
+        keys = due["Key"].tolist()
+        overrides = BS.load_overrides()
+        disp = due.drop(columns=["Key"]).copy()
+        disp["Status"] = [overrides.get(k, BS.flow_status(s))
+                          for k, s in zip(keys, disp["Status"])]
+        edited = st.data_editor(
+            disp, use_container_width=True, hide_index=True, key="due_status_editor",
+            disabled=[c for c in disp.columns if c != "Status"],
+            column_config={
+                "Amount": st.column_config.NumberColumn("Amount", format="%.0f"),
+                "Status": st.column_config.SelectboxColumn(
+                    "Status", options=BS.STATUS_FLOW, required=True),
+            })
+        changed = 0
+        for k, old, new in zip(keys, disp["Status"], edited["Status"]):
+            if str(new) != str(old):
+                BS.set_status(k, str(new), current_user().get("name", ""))
+                changed += 1
+        if changed:
+            st.success(f"Saved {changed} status change(s).")

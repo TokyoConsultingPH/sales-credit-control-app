@@ -145,10 +145,9 @@ def due_for_billing(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = No
     cutoff = as_of + pd.Timedelta(days=horizon)
 
     has_taxonomy = "branch" in df.columns and "category" in df.columns
-    result_cols = (["Branch", "Department", "Client", "Engagement", "Manager",
-                    "NextBillingDate", "Status", "Days Until Due"] if has_taxonomy else
-                   ["Department", "Client", "Engagement", "Manager",
-                    "NextBillingDate", "Status", "Days Until Due"])
+    lead = ["Branch", "Department"] if has_taxonomy else ["Department"]
+    result_cols = lead + ["Client", "Engagement", "Manager", "Amount",
+                          "NextBillingDate", "Status", "Days Until Due", "Key"]
 
     d = df.dropna(subset=["next_billing_date"]).copy()
     d = d[d["next_billing_date"] <= cutoff]
@@ -165,9 +164,15 @@ def due_for_billing(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = No
     out["Client"] = d["client"]
     out["Engagement"] = d["engagement"]
     out["Manager"] = d["manager"]
+    amount = d["amount"] if "amount" in d.columns else d.get("invoiced", 0)
+    out["Amount"] = pd.to_numeric(amount, errors="coerce").fillna(0.0).values
     out["NextBillingDate"] = d["next_billing_date"]
     out["Status"] = d["status"]
     out["Days Until Due"] = d["Days Until Due"]
+    grp = d["branch"] if "branch" in d.columns else d["department"]
+    out["Key"] = (d["client"].astype(str) + "||" + d["engagement"].astype(str) + "||"
+                  + d["next_billing_date"].dt.strftime("%Y-%m-%d").astype(str) + "||"
+                  + grp.astype(str)).values
     return out.sort_values("Days Until Due").reset_index(drop=True)
 
 
