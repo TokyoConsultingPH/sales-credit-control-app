@@ -31,19 +31,33 @@ def _normalize_url(url: str) -> str:
     return url
 
 
-def make_engine(db_cfg: dict, password: str | None = None, overrides: dict | None = None):
-    """Create a SQLAlchemy engine for PostgreSQL. Imports SQLAlchemy lazily so
-    the rest of the app works even if the DB drivers aren't installed.
+# One SQLAlchemy engine per connection URL, reused across the whole process so
+# we don't pay the connect + SSL handshake on every query (big speedup).
+_ENGINE_CACHE: dict = {}
 
-    If DATABASE_URL is set (e.g. on Render) it takes precedence over the
+
+def _engine_for(url: str):
+    eng = _ENGINE_CACHE.get(url)
+    if eng is None:
+        from sqlalchemy import create_engine
+        eng = create_engine(
+            url, pool_pre_ping=True, pool_recycle=280, pool_size=5, max_overflow=5,
+            connect_args={"connect_timeout": 10, "keepalives": 1,
+                          "keepalives_idle": 30, "keepalives_interval": 10,
+                          "keepalives_count": 5})
+        _ENGINE_CACHE[url] = eng
+    return eng
+
+
+def make_engine(db_cfg: dict, password: str | None = None, overrides: dict | None = None):
+    """Return a cached SQLAlchemy engine for PostgreSQL (reused per URL).
+
+    If DATABASE_URL is set (e.g. on the cloud) it takes precedence over the
     host/user/password fields.
     """
-    from sqlalchemy import create_engine
-
     env_url = os.getenv("DATABASE_URL")
     if env_url and not overrides:
-        return create_engine(_normalize_url(env_url), pool_pre_ping=True,
-                             connect_args={"connect_timeout": 10})
+        return _engine_for(_normalize_url(env_url))
 
     o = {**db_cfg, **(overrides or {})}
     pwd = _password(password or o.get("password"))
@@ -51,7 +65,7 @@ def make_engine(db_cfg: dict, password: str | None = None, overrides: dict | Non
         f"postgresql+psycopg2://{quote_plus(str(o['user']))}:{quote_plus(pwd)}"
         f"@{o['host']}:{int(o['port'])}/{o['dbname']}"
     )
-    return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
+    return _engine_for(url)
 
 
 def test_connection(engine) -> str:
