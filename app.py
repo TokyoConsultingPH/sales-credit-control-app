@@ -22,6 +22,7 @@ from src import quotations as Q
 from src import attachments as AT
 from src import engagements as EN
 from src import notify_email as MAIL
+from src import registry as REG
 from src.auth import require_password
 
 ROOT = Path(__file__).resolve().parent
@@ -282,6 +283,84 @@ def render_complete_engagement() -> None:
     render_billing_notifications()
 
 
+def render_manage_users() -> None:
+    st.title("👥 Manage users")
+
+    st.subheader("Employee roster")
+    with st.form("add_user", clear_on_submit=True):
+        a, b, c = st.columns([3, 2, 1])
+        uname = a.text_input("Name")
+        urole = b.selectbox("Role", REG.ROLES)
+        c.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if c.form_submit_button("Add", use_container_width=True):
+            REG.add_user(uname, urole)
+            st.rerun()
+    users = REG.list_users()
+    if users.empty:
+        st.caption("No users added yet. Names typed into forms still appear in activity below.")
+    else:
+        st.dataframe(users, use_container_width=True, hide_index=True)
+        rm = st.selectbox("Remove a user", ["—"] + users["name"].astype(str).tolist())
+        if rm != "—" and st.button(f"Remove {rm}"):
+            REG.remove_user(rm)
+            st.rerun()
+
+    st.divider()
+    st.subheader("Activity — who reported which engagements")
+    act = REG.user_activity()
+    if act.empty:
+        st.info("No reported engagements yet.")
+        return
+    st.dataframe(act.style.format({"Total value": "{:,.0f}"}),
+                 use_container_width=True, hide_index=True)
+    who = st.selectbox("View engagements reported by", act["Name"].tolist())
+    eng = REG.user_engagements(who)
+    st.caption(f"{len(eng)} engagement(s) reported by {who}")
+    st.dataframe(eng.style.format({"price": "{:,.0f}"}), use_container_width=True, hide_index=True)
+
+
+def render_client_database() -> None:
+    st.title("🗂️ Client database")
+    st.caption("Built automatically from reported (signed) quotations.")
+    cdb = REG.client_database()
+    if cdb.empty:
+        st.info("No clients yet. Report an ordered quotation to populate this.")
+        return
+
+    q = st.text_input("Search client / contact / email").strip().lower()
+    view = cdb
+    if q:
+        mask = (cdb["Client"].astype(str).str.lower().str.contains(q)
+                | cdb["Contact"].astype(str).str.lower().str.contains(q)
+                | cdb["Email"].astype(str).str.lower().str.contains(q))
+        view = cdb[mask]
+
+    m = st.columns(3)
+    m[0].metric("Clients", f"{len(view)}")
+    m[1].metric("Engagements", f"{int(view['Engagements'].sum())}")
+    m[2].metric("Total value", money(view["Total value"].sum()))
+    st.dataframe(view.style.format({"Total value": "{:,.0f}"}),
+                 use_container_width=True, hide_index=True)
+    st.download_button("⬇️ Download client database (CSV)",
+                       cdb.to_csv(index=False).encode("utf-8-sig"),
+                       file_name="client_database.csv", mime="text/csv")
+
+    st.divider()
+    pick = st.selectbox("Open a client", view["Client"].tolist())
+    if pick:
+        rec = cdb[cdb["Client"] == pick].iloc[0]
+        st.markdown(
+            f"### {pick}\n"
+            f"👤 {rec['Contact'] or '—'} · {rec['Title'] or '—'}  \n"
+            f"✉️ {rec['Email'] or '—'}  \n"
+            f"📍 {rec['Address'] or '—'}  \n"
+            f"🏢 {rec['Branch'] or '—'} · {rec['Type'] or '—'} client")
+        eng = REG.client_engagements(pick)
+        st.caption(f"{len(eng)} engagement(s)")
+        st.dataframe(eng.style.format({"price": "{:,.0f}"}),
+                     use_container_width=True, hide_index=True)
+
+
 # --------------------------------------------------------------------------- #
 # Sidebar — page selector
 # --------------------------------------------------------------------------- #
@@ -290,13 +369,20 @@ st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 
 _pending_badge = EN.pending_count()
 _complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
-page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label])
+page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label,
+                                 "👥 Manage Users", "🗂️ Client Database"])
 st.sidebar.divider()
 if page == "📝 Report Ordered Quotation":
     render_quotation_form()
     st.stop()
 if page.startswith("✅ Complete Engagement"):
     render_complete_engagement()
+    st.stop()
+if page == "👥 Manage Users":
+    render_manage_users()
+    st.stop()
+if page == "🗂️ Client Database":
+    render_client_database()
     st.stop()
 
 # --------------------------------------------------------------------------- #

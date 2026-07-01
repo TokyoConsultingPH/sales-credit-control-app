@@ -13,6 +13,7 @@ data/quotations.csv
 data/attachments/
 data/completions.csv
 data/notifications.csv
+data/users.csv
 
 # Client PDFs / documents (e.g. quotation references) — keep out of Git
 *.pdf
