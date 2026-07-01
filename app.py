@@ -1000,22 +1000,34 @@ t1, t2, t3, t4 = st.tabs(
 
 with t1:
     show_target = (summary["Target"] > 0).any()
+    disp = summary.rename(columns={"Invoiced": "Billed", "Received": "Collected"})
     c1, c2 = st.columns([3, 2])
     with c1:
-        ycols = ["Invoiced", "Received"] + (["Target"] if show_target else [])
+        ycols = ["Billed", "Collected"] + (["Target"] if show_target else [])
         st.plotly_chart(
-            px.bar(summary, x="Department", y=ycols, barmode="group",
-                   title=f"Billed / Collected by {dim_label}"),
+            px.bar(disp, x="Department", y=ycols, barmode="group",
+                   title=f"Billed / Collected by {dim_label}",
+                   color_discrete_map={"Billed": "#378ADD", "Collected": "#1D9E75",
+                                       "Target": "#9ca3af"}),
             use_container_width=True)
     with c2:
         st.plotly_chart(
-            px.pie(summary, names="Department", values="Invoiced",
-                   title="Billing share"),
+            px.pie(disp, names="Department", values="Billed", title="Billing share"),
             use_container_width=True)
-    fmt = {"Invoiced": "{:,.0f}", "Received": "{:,.0f}", "Outstanding": "{:,.0f}",
+
+    # Hide the target columns entirely when no targets are configured.
+    if not show_target:
+        disp = disp.drop(columns=["Target", "Attainment %", "Gap to Target"], errors="ignore")
+    cols_order = [c for c in ["Department", "Billed", "Collected", "Outstanding",
+                              "Engagements", "Clients", "Collection %",
+                              "Target", "Attainment %", "Gap to Target"] if c in disp.columns]
+    disp = disp[cols_order]
+    fmt = {"Billed": "{:,.0f}", "Collected": "{:,.0f}", "Outstanding": "{:,.0f}",
            "Target": "{:,.0f}", "Gap to Target": "{:,.0f}",
            "Attainment %": "{:.1f}", "Collection %": "{:.1f}"}
-    st.dataframe(summary.style.format(fmt, na_rep="—"), use_container_width=True)
+    st.dataframe(
+        disp.style.format({k: v for k, v in fmt.items() if k in disp.columns}, na_rep="—"),
+        use_container_width=True, hide_index=True)
 
 with t2:
     st.markdown("**Year-over-year by month** — each line is a year, Jan–Dec")
