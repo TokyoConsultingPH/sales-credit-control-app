@@ -7,6 +7,85 @@ import pandas as pd
 from . import monitoring as M
 
 
+def _write_matrix(xw, book, sheet: str, matrix: pd.DataFrame, id_cols: list[str],
+                  month_cols: list[str]) -> None:
+    """Write a month-by-month matrix sheet (credit-control style)."""
+    money = book.add_format({"num_format": "#,##0", "border": 1})
+    idfmt = book.add_format({"border": 1})
+    header = book.add_format({"bold": True, "bg_color": "#1F4E78", "font_color": "white",
+                              "border": 1, "align": "center"})
+    totfmt = book.add_format({"num_format": "#,##0", "bold": True, "bg_color": "#DDEBF7", "border": 1})
+    title = book.add_format({"bold": True, "font_size": 14})
+
+    ws = xw.book.add_worksheet(sheet[:31])
+    xw.sheets[sheet[:31]] = ws
+    ws.write(0, 0, sheet, title)
+    cols = id_cols + month_cols + ["Total"]
+    for c, name in enumerate(cols):
+        ws.write(2, c, name, header)
+    for r, (_, row) in enumerate(matrix.iterrows(), start=3):
+        for c, name in enumerate(cols):
+            val = row.get(name)
+            if name in id_cols:
+                ws.write(r, c, "" if pd.isna(val) else str(val), idfmt)
+            elif name == "Total":
+                ws.write_number(r, c, float(val or 0), totfmt)
+            else:
+                ws.write_number(r, c, float(val or 0), money)
+    # column widths
+    for c, name in enumerate(id_cols):
+        width = max(14, min(40, int(matrix[name].astype(str).str.len().max() or 14) + 2))
+        ws.set_column(c, c, width)
+    ws.set_column(len(id_cols), len(cols) - 1, 12)
+    ws.freeze_panes(3, len(id_cols))
+
+
+def build_monthly_matrix_excel(df: pd.DataFrame, cfg: dict) -> bytes:
+    """Month-by-month sales matrix, mirroring the Credit Control layout:
+    rows = engagements (and a by-department sheet), columns = each month."""
+    buf = io.BytesIO()
+    d = df.copy()
+    d = d[d["date"].notna()]
+    d["invoiced"] = pd.to_numeric(d["invoiced"], errors="coerce").fillna(0.0)
+    d["received"] = pd.to_numeric(d.get("received"), errors="coerce").fillna(0.0)
+
+    if d.empty:
+        with pd.ExcelWriter(buf, engine="xlsxwriter") as xw:
+            pd.DataFrame({"note": ["No dated sales to plot."]}).to_excel(xw, index=False)
+        buf.seek(0)
+        return buf.getvalue()
+
+    d["Month"] = d["date"].dt.to_period("M").dt.to_timestamp()
+    months = sorted(d["Month"].unique())
+    month_cols = [pd.Timestamp(m).strftime("%Y-%m") for m in months]
+    d["MonthLabel"] = d["Month"].dt.strftime("%Y-%m")
+
+    def matrix_by(index_cols: list[str], value: str) -> pd.DataFrame:
+        piv = pd.pivot_table(d, index=index_cols, columns="MonthLabel", values=value,
+                             aggfunc="sum", fill_value=0.0)
+        for mc in month_cols:
+            if mc not in piv.columns:
+                piv[mc] = 0.0
+        piv = piv[month_cols]
+        piv["Total"] = piv.sum(axis=1)
+        piv = piv.reset_index()
+        return piv.sort_values("Total", ascending=False)
+
+    eng = matrix_by(["client", "engagement", "department"], "invoiced").rename(
+        columns={"client": "Client", "engagement": "Engagement", "department": "Department"})
+    dept = matrix_by(["department"], "invoiced").rename(columns={"department": "Department"})
+    coll = matrix_by(["department"], "received").rename(columns={"department": "Department"})
+
+    with pd.ExcelWriter(buf, engine="xlsxwriter") as xw:
+        book = xw.book
+        _write_matrix(xw, book, "Monthly Sales by Dept", dept, ["Department"], month_cols)
+        _write_matrix(xw, book, "Monthly Collections by Dept", coll, ["Department"], month_cols)
+        _write_matrix(xw, book, "Monthly Sales by Engagement", eng,
+                      ["Client", "Engagement", "Department"], month_cols)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def build_excel_report(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = None) -> bytes:
     """Return an .xlsx workbook (as bytes) with summary, monitoring and
     per-department sheets."""

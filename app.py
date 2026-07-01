@@ -546,6 +546,14 @@ st.sidebar.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     use_container_width=True,
 )
+st.sidebar.download_button(
+    "🗓️ Download monthly sales matrix",
+    data=R.build_monthly_matrix_excel(df, cfg),
+    file_name=f"monthly_sales_matrix_{as_of.date()}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    use_container_width=True,
+    help="Month-by-month grid (like the Credit Control layout): engagements × months.",
+)
 
 for w in DL.validate(df):
     st.sidebar.warning(w)
