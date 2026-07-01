@@ -29,8 +29,11 @@ from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
 SAMPLE = ROOT / "data" / "sample_sales.csv"
+LOGO_PATH = ROOT / "assets" / "logo.png"
 
 st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
+if LOGO_PATH.exists():
+    st.logo(str(LOGO_PATH), size="large")
 USER = require_login()
 cfg = load_config()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
@@ -574,6 +577,8 @@ def render_client_database() -> None:
 # --------------------------------------------------------------------------- #
 # Sidebar — page selector
 # --------------------------------------------------------------------------- #
+if LOGO_PATH.exists():
+    st.sidebar.image(str(LOGO_PATH), use_container_width=True)
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 

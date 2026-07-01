@@ -8,9 +8,17 @@ from __future__ import annotations
 
 import hmac
 import os
+from pathlib import Path
 import streamlit as st
 
 from src import registry as REG
+
+_LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+
+
+def _logo() -> None:
+    if _LOGO.exists():
+        st.image(str(_LOGO), width=320)
 
 
 def _master_password() -> str | None:
@@ -51,6 +59,7 @@ def require_login() -> dict:
 
 
 def _render_login(master: str | None) -> None:
+    _logo()
     st.title("🔒 Sign in")
     st.caption("Sales & Credit Control")
     with st.form("login"):
@@ -72,6 +81,7 @@ def _render_login(master: str | None) -> None:
 
 
 def _render_first_admin() -> None:
+    _logo()
     st.title("👋 Create the first admin")
     st.caption("No users exist yet — set up an administrator account to begin.")
     with st.form("first_admin"):
