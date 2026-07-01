@@ -68,14 +68,48 @@ def require_login() -> dict:
     st.stop()
 
 
+APP_NAME = "Sales & Credit Control"
+
+
+def _top_bar() -> None:
+    """Header bar: logo + app name on the left, firm name on the right."""
+    p = _find_logo()
+    left, right = st.columns([3, 2])
+    with left:
+        c = st.columns([1, 4])
+        if p:
+            c[0].image(str(p), width=56)
+        c[1].markdown(
+            f"<div style='padding-top:16px;font-size:1.25rem;font-weight:600'>{APP_NAME}</div>",
+            unsafe_allow_html=True)
+    right.markdown(
+        "<div style='text-align:right;padding-top:10px'>"
+        "<span style='color:#1F4E78;font-weight:700;font-size:1.1rem'>TOKYO CONSULTING FIRM</span><br>"
+        "<span style='color:#6b7280;font-size:.85rem'>PH Branch</span></div>",
+        unsafe_allow_html=True)
+    st.divider()
+
+
+def _brand_center(mid) -> None:
+    p = _find_logo()
+    if p:
+        cc = mid.columns([1, 2, 1])
+        cc[1].image(str(p), width=170)
+    mid.markdown(
+        "<p style='text-align:center;color:#9ca3af;letter-spacing:2px;font-size:.75rem;margin:.3rem 0 0'>"
+        "TOKYO CONSULTING FIRM · PH BRANCH</p>", unsafe_allow_html=True)
+
+
 def _render_login(master: str | None) -> None:
-    _logo()
-    st.title("🔒 Sign in")
-    st.caption("Sales & Credit Control")
-    with st.form("login"):
-        username = st.text_input("Username")
+    _top_bar()
+    _, mid, _ = st.columns([1, 1.4, 1])
+    _brand_center(mid)
+    mid.markdown(f"<h3 style='text-align:center;margin:.3rem 0 1rem'>{APP_NAME}</h3>",
+                 unsafe_allow_html=True)
+    with mid.form("login"):
+        username = st.text_input("Email / username")
         password = st.text_input("Password", type="password")
-        ok = st.form_submit_button("Sign in", type="primary")
+        ok = st.form_submit_button("Log in", type="primary", use_container_width=True)
     if ok:
         user = REG.verify_login(username, password)
         if user:
@@ -87,24 +121,27 @@ def _render_login(master: str | None) -> None:
                                         "role": "Admin", "master": True}
             st.rerun()
         else:
-            st.error("Invalid username or password.")
+            mid.error("Invalid email/username or password.")
 
 
 def _render_first_admin() -> None:
-    _logo()
-    st.title("👋 Create the first admin")
-    st.caption("No users exist yet — set up an administrator account to begin.")
-    with st.form("first_admin"):
+    _top_bar()
+    _, mid, _ = st.columns([1, 1.4, 1])
+    _brand_center(mid)
+    mid.markdown("<h3 style='text-align:center;margin:.3rem 0'>Create the first admin</h3>",
+                 unsafe_allow_html=True)
+    mid.caption("No users exist yet — set up an administrator account to begin.")
+    with mid.form("first_admin"):
         name = st.text_input("Full name")
-        username = st.text_input("Username")
+        username = st.text_input("Email / username")
         p1 = st.text_input("Password", type="password")
         p2 = st.text_input("Confirm password", type="password")
-        ok = st.form_submit_button("Create admin", type="primary")
+        ok = st.form_submit_button("Create admin", type="primary", use_container_width=True)
     if ok:
         if not (username.strip() and p1):
-            st.error("Username and password are required.")
+            mid.error("Username and password are required.")
         elif p1 != p2:
-            st.error("Passwords do not match.")
+            mid.error("Passwords do not match.")
         else:
             added, msg = REG.add_user(username, name or username, "Admin", p1)
             if added:
@@ -113,4 +150,4 @@ def _render_first_admin() -> None:
                                             "role": "Admin", "master": False}
                 st.rerun()
             else:
-                st.error(msg)
+                mid.error(msg)
