@@ -89,10 +89,20 @@ def _sales_detail(title, sub):
           "engagement": "Engagement", "invoiced": "Billed", "received": "Collected",
           "outstanding": "Outstanding", "status": "Status"}
     det = sub.rename(columns=dc)
-    det = det[[v for v in dc.values() if v in det.columns]]
-    st.dataframe(det.sort_values("Date").style.format(
+    det = det[[v for v in dc.values() if v in det.columns]].sort_values("Date")
+    st.dataframe(det.style.format(
         {"Billed": "{:,.0f}", "Collected": "{:,.0f}", "Outstanding": "{:,.0f}"}),
         use_container_width=True, hide_index=True)
+
+    import io
+    import re as _re
+    _buf = io.BytesIO()
+    with pd.ExcelWriter(_buf, engine="xlsxwriter") as _xw:
+        det.to_excel(_xw, index=False, sheet_name="Sales detail")
+    _safe = _re.sub(r"[^A-Za-z0-9._-]+", "_", str(title))[:60].strip("_") or "sales_detail"
+    st.download_button("⬇️ Download this detail (Excel)", _buf.getvalue(),
+                       file_name=f"sales_detail_{_safe}.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 def find_tcf_workbook() -> Path | None:
