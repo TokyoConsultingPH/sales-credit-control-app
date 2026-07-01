@@ -99,6 +99,28 @@ database:
     status: "status"
 
 # ---------------------------------------------------------------------
+# 4b. TAXONOMY — standard Branch values and how service categories map to a
+# Department (Legal / Accounting / Audit / HR). Edit to fit your firm.
+# ---------------------------------------------------------------------
+taxonomy:
+  # Raw branch value (any case) -> standardised label.
+  branch_map:
+    MAKATI: Makati
+    CEBU: Cebu
+    AMP: AMP
+    "TCF HR": TCF HR
+    HR: TCF HR
+  # Department is chosen by the FIRST keyword that appears in the category
+  # (checked in the order listed). Unmatched -> department_default.
+  department_keywords:
+    Legal: [legal, proxy, corporate secretary, incorporation, registration, permit,
+            transfer of shares, change of officer, amendment, dissolution]
+    Audit: [audit]
+    HR: [hr, payroll, dole, acr, immigration, visa, work permit, sss, philhealth, expat]
+    Accounting: [accounting, account, tax, bookkeeping, compilation, itr, financial, vat, bir]
+  department_default: "Other"
+
+# ---------------------------------------------------------------------
 # 5. EMAIL (for final-50% billing notifications) — optional
 # Password comes from env var TCF_SMTP_PASSWORD (never store it here).
 # Example for Gmail: smtp_host smtp.gmail.com, port 587, use an App Password.

@@ -254,6 +254,9 @@ def to_canonical(tidy: pd.DataFrame, dimension: str) -> pd.DataFrame:
         "status": tidy["month_status"],
         "outstanding": tidy["outstanding"],
     })
+    # Carry Branch + service Category through for Branch/Department columns.
+    out["branch"] = tidy["branch"]
+    out["category"] = tidy["category"]
     # 'due for billing' months: surface the month as the next billing date.
     out["next_billing_date"] = tidy["date"].where(tidy["due_billing_amt"] > 0)
     return out

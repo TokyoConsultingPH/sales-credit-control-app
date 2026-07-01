@@ -32,8 +32,8 @@ FIELDS = [
 
 # Dropdown choices (match the workbook's data lists and the quotation document).
 CLASSIFICATIONS = ["Subscribe", "Spot", "AMP"]
-BRANCHES = ["Makati", "Cebu", "AMP"]
-DEPARTMENTS = ["Accounting", "Tax", "Audit", "Legal", "Advisory", "HR / Payroll", "Other"]
+BRANCHES = ["Makati", "Cebu", "AMP", "TCF HR"]
+DEPARTMENTS = ["Legal", "Accounting", "Audit", "HR"]
 CLIENT_TYPES = ["New", "Existing", "Past"]
 UNITS = ["PHP/Year", "PHP/Month", "PHP/Spot"]
 SERVICE_TYPES = [

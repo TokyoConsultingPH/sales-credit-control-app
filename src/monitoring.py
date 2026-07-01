@@ -6,7 +6,7 @@ dict, and returns plain DataFrames / dicts ready for display or export.
 from __future__ import annotations
 
 import pandas as pd
-from .config import target_for
+from .config import target_for, normalize_branch, department_for
 
 
 # --------------------------------------------------------------------------- #
@@ -144,19 +144,30 @@ def due_for_billing(df: pd.DataFrame, cfg: dict, as_of: pd.Timestamp | None = No
     horizon = cfg.get("monitoring", {}).get("billing_due_horizon_days", 14)
     cutoff = as_of + pd.Timedelta(days=horizon)
 
+    has_taxonomy = "branch" in df.columns and "category" in df.columns
+    result_cols = (["Branch", "Department", "Client", "Engagement", "Manager",
+                    "NextBillingDate", "Status", "Days Until Due"] if has_taxonomy else
+                   ["Department", "Client", "Engagement", "Manager",
+                    "NextBillingDate", "Status", "Days Until Due"])
+
     d = df.dropna(subset=["next_billing_date"]).copy()
     d = d[d["next_billing_date"] <= cutoff]
     if d.empty:
-        return pd.DataFrame(columns=[
-            "Department", "Client", "Engagement", "Manager",
-            "NextBillingDate", "Status", "Days Until Due"
-        ])
+        return pd.DataFrame(columns=result_cols)
     d["Days Until Due"] = (d["next_billing_date"] - as_of).dt.days
-    cols = {
-        "department": "Department", "client": "Client", "engagement": "Engagement",
-        "manager": "Manager", "next_billing_date": "NextBillingDate", "status": "Status",
-    }
-    out = d.rename(columns=cols)[list(cols.values()) + ["Days Until Due"]]
+
+    out = pd.DataFrame(index=d.index)
+    if has_taxonomy:
+        out["Branch"] = d["branch"].map(lambda b: normalize_branch(cfg, b))
+        out["Department"] = d["category"].map(lambda c: department_for(cfg, c))
+    else:
+        out["Department"] = d["department"]
+    out["Client"] = d["client"]
+    out["Engagement"] = d["engagement"]
+    out["Manager"] = d["manager"]
+    out["NextBillingDate"] = d["next_billing_date"]
+    out["Status"] = d["status"]
+    out["Days Until Due"] = d["Days Until Due"]
     return out.sort_values("Days Until Due").reset_index(drop=True)
 
 

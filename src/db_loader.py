@@ -138,6 +138,10 @@ def to_canonical(tidy: pd.DataFrame, dimension: str) -> pd.DataFrame:
         "status": tidy.get("status", ""),
         "outstanding": tidy["outstanding"],
     })
+    if "branch" in tidy.columns:
+        out["branch"] = tidy["branch"]
+    if "category" in tidy.columns:
+        out["category"] = tidy["category"]
     return out
 
 
