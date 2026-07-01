@@ -640,6 +640,37 @@ with g2:
         st.info("No open AR.")
 
 # --------------------------------------------------------------------------- #
+# Leaderboards
+# --------------------------------------------------------------------------- #
+st.markdown("#### Leaderboards")
+
+
+def _leaderboard(col, series, title, n=8):
+    with col:
+        series = series[series > 0]
+        if series.empty:
+            st.caption(f"No data for {title.lower()}.")
+            return
+        d = series.sort_values(ascending=True).tail(n).reset_index()
+        d.columns = ["Label", "Amount"]
+        d["Label"] = d["Label"].astype(str).str.slice(0, 28)
+        fig = px.bar(d, x="Amount", y="Label", orientation="h", title=title, text="Amount")
+        fig.update_traces(marker_color="#534AB7", texttemplate="%{text:,.0f}",
+                          textposition="outside", cliponaxis=False)
+        fig.update_layout(height=300, margin=dict(t=40, b=0, l=0, r=30),
+                          yaxis_title=None, xaxis_title=None, xaxis_visible=False, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+
+lb = st.columns(3)
+_eng = df.copy()
+_eng["_lbl"] = (_eng["engagement"].astype(str).str.slice(0, 24) + " · "
+                + _eng["client"].astype(str).str.slice(0, 16))
+_leaderboard(lb[0], df.groupby("client")["invoiced"].sum(), "Top clients (billed)")
+_leaderboard(lb[1], df.groupby("department")["invoiced"].sum(), f"Top {dim_label.lower()}s (billed)")
+_leaderboard(lb[2], _eng.groupby("_lbl")["invoiced"].sum(), "Top engagements (billed)")
+
+# --------------------------------------------------------------------------- #
 # Alerts
 # --------------------------------------------------------------------------- #
 alerts = M.build_alerts(df, cfg, as_of)
