@@ -531,6 +531,19 @@ def render_sales_database() -> None:
     if changed:
         st.success(f"Saved {changed} change(s).")
 
+    # Monthly totals row at the bottom.
+    _num_cols = months + ["TOTAL SERVICE FEE", "Total"]
+    totals = {c: "" for c in edited.columns}
+    totals[edited.columns[0]] = "TOTAL"
+    for c in _num_cols:
+        if c in edited.columns:
+            totals[c] = pd.to_numeric(edited[c], errors="coerce").sum()
+    tot_df = pd.DataFrame([totals])[edited.columns]
+    st.markdown("**Monthly totals**")
+    st.dataframe(
+        tot_df.style.format({c: "{:,.0f}" for c in _num_cols if c in tot_df.columns}),
+        use_container_width=True, hide_index=True)
+
     import io as _io
     _buf = _io.BytesIO()
     with pd.ExcelWriter(_buf, engine="xlsxwriter") as _xw:
