@@ -24,6 +24,7 @@ from src import engagements as EN
 from src import notify_email as MAIL
 from src import registry as REG
 from src import billing_status as BS
+from src import sales_overrides as SO
 from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
@@ -447,7 +448,17 @@ def render_sales_database() -> None:
     out["Total"] = out[months].sum(axis=1)
     ordered = (["Company", "Engagement", "Branch", "Classification", "Category", "PIC",
                 "Status", "TOTAL SERVICE FEE"] + months + ["Total"])
-    out = out[[c for c in ordered if c in out.columns]]
+    out = out[[c for c in ordered if c in out.columns]].reset_index(drop=True)
+
+    # Overlay saved overrides for the editable fields.
+    overrides = SO.load_overrides()
+    if overrides:
+        out = out.astype({c: object for c in SO.EDITABLE})
+        for i in out.index:
+            k = SO.make_key(year, out.at[i, "Company"], out.at[i, "Engagement"])
+            for fld, val in overrides.get(k, {}).items():
+                if fld in out.columns:
+                    out.at[i, fld] = val
 
     f1, f2, f3 = st.columns([1, 1, 2])
     brs = sorted(out["Branch"].dropna().unique())
@@ -460,6 +471,7 @@ def render_sales_database() -> None:
     if q:
         fv = fv[fv["Company"].astype(str).str.lower().str.contains(q)
                 | fv["Engagement"].astype(str).str.lower().str.contains(q)]
+    fv = fv.reset_index(drop=True)
 
     m = st.columns(3)
     m[0].metric("Engagements", f"{len(fv):,}")
@@ -468,21 +480,50 @@ def render_sales_database() -> None:
     m[2].metric(f"Billed in {year}", money_compact(fv[months].to_numpy().sum()),
                 help=money(fv[months].to_numpy().sum()))
 
-    numfmt = {mm: "{:,.0f}" for mm in months}
-    numfmt["TOTAL SERVICE FEE"] = "{:,.0f}"
-    numfmt["Total"] = "{:,.0f}"
-    st.dataframe(fv.style.format(numfmt), use_container_width=True, hide_index=True)
+    st.caption("Branch, Classification, Category, PIC and Status are editable dropdowns — "
+               "changes are saved.")
+    # Dropdown option lists (existing values + standard choices).
+    branch_opts = sorted(set(out["Branch"].dropna()) | set(Q.BRANCHES) | {"Unknown"})
+    class_opts = sorted(set(out["Classification"].dropna()) | set(Q.CLASSIFICATIONS))
+    cat_opts = sorted(set(out["Category"].dropna()))
+    pic_opts = sorted(set(out["PIC"].dropna()) | {"Unassigned"})
+    status_opts = sorted(set(out["Status"].dropna()))
+    col_cfg = {
+        "Branch": st.column_config.SelectboxColumn("Branch", options=branch_opts),
+        "Classification": st.column_config.SelectboxColumn("Classification", options=class_opts),
+        "Category": st.column_config.SelectboxColumn("Category", options=cat_opts),
+        "PIC": st.column_config.SelectboxColumn("PIC", options=pic_opts),
+        "Status": st.column_config.SelectboxColumn("Status", options=status_opts),
+        "TOTAL SERVICE FEE": st.column_config.NumberColumn("TOTAL SERVICE FEE", format="%.0f"),
+        "Total": st.column_config.NumberColumn("Total", format="%.0f"),
+    }
+    for mm in months:
+        col_cfg[mm] = st.column_config.NumberColumn(mm, format="%.0f")
+
+    edited = st.data_editor(
+        fv, use_container_width=True, hide_index=True, key="sales_db_editor",
+        disabled=[c for c in fv.columns if c not in SO.EDITABLE], column_config=col_cfg)
+
+    changed = 0
+    for i in range(len(fv)):
+        k = SO.make_key(year, edited.at[i, "Company"], edited.at[i, "Engagement"])
+        for fld in SO.EDITABLE:
+            if str(fv.at[i, fld]) != str(edited.at[i, fld]):
+                SO.set_override(k, fld, edited.at[i, fld], current_user().get("name", ""))
+                changed += 1
+    if changed:
+        st.success(f"Saved {changed} change(s).")
 
     import io as _io
     _buf = _io.BytesIO()
     with pd.ExcelWriter(_buf, engine="xlsxwriter") as _xw:
-        fv.to_excel(_xw, index=False, sheet_name=f"Credit Control {year}")
+        edited.to_excel(_xw, index=False, sheet_name=f"Credit Control {year}")
     dl = st.columns(2)
     dl[0].download_button("⬇️ Download (Excel)", _buf.getvalue(),
                           file_name=f"credit_control_{year}.xlsx",
                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                           use_container_width=True)
-    dl[1].download_button("⬇️ Download (CSV)", fv.to_csv(index=False).encode("utf-8-sig"),
+    dl[1].download_button("⬇️ Download (CSV)", edited.to_csv(index=False).encode("utf-8-sig"),
                           file_name=f"credit_control_{year}.csv", mime="text/csv",
                           use_container_width=True)
 

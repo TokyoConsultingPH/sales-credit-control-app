@@ -15,6 +15,7 @@ data/completions.csv
 data/notifications.csv
 data/users.csv
 data/billing_status.csv
+data/sales_overrides.csv
 
 # Client PDFs / documents (e.g. quotation references) — keep out of Git
 *.pdf
