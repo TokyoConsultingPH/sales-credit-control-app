@@ -98,6 +98,11 @@ def cx_users():
     return REG.list_users_display()
 
 
+@st.cache_data(ttl=300, show_spinner="Loading data from database…")
+def _load_db_tidy(_cfg, pwd, overrides, sql):
+    return DB.load_from_db(_cfg, pwd, overrides, sql=sql)
+
+
 DIMENSIONS = {"Branch": "branch", "Category": "category",
               "Classification": "classification", "PIC / staff": "pic"}
 
@@ -772,16 +777,18 @@ elif source == "Database (PostgreSQL)":
                 st.caption(f"(Connect to browse) {e}")
 
     sql = st.sidebar.text_area("SQL query", value=(dbc.get("query") or "").strip(), height=140)
-    if st.sidebar.button("▶ Run query & load", type="primary", use_container_width=True):
-        try:
-            st.session_state["db_tidy"] = DB.load_from_db(cfg, pwd, overrides, sql=sql)
-            st.sidebar.success(f"Loaded {len(st.session_state['db_tidy']):,} rows.")
-        except Exception as e:
-            st.sidebar.error(f"Load failed: {e}")
+    if st.sidebar.button("🔄 Refresh data", use_container_width=True):
+        _load_db_tidy.clear()
 
-    tidy = st.session_state.get("db_tidy")
+    try:
+        tidy = _load_db_tidy(cfg, pwd, overrides, sql)
+        st.session_state["db_tidy"] = tidy
+    except Exception as e:
+        st.sidebar.error(f"Load failed: {e}")
+        tidy = st.session_state.get("db_tidy")
+
     if tidy is None or tidy.empty:
-        st.info("Configure the connection and SQL in the sidebar, then **Run query & load**.")
+        st.info("No data loaded. Check the connection/SQL in the sidebar.")
         st.stop()
 
     source_label = "PostgreSQL (DATABASE_URL)" if use_env_url else f"PostgreSQL · {dbc.get('dbname','')}"
