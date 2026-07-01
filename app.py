@@ -687,6 +687,8 @@ elif source == "Database (PostgreSQL)":
             st.success("Using DATABASE_URL from environment (Render).")
             schema = st.text_input("Schema", schema)
         else:
+            st.warning("DATABASE_URL not detected — using manual connection. "
+                       "On the cloud, add it to the app's Secrets and reboot.")
             host = st.text_input("Host", dbc.get("host", "localhost"))
             port = st.number_input("Port", value=int(dbc.get("port", 5432)), step=1)
             dbname = st.text_input("Database", dbc.get("dbname", ""))
