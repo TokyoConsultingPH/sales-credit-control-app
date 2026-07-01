@@ -161,6 +161,36 @@ def pending_count() -> int:
     return len(load_notifications(status="pending"))
 
 
+def has_notification(engagement_key: str, ntype: str) -> bool:
+    df = load_notifications()
+    if df.empty:
+        return False
+    return bool(((df["engagement_key"].astype(str) == str(engagement_key))
+                 & (df["type"].astype(str) == ntype)).any())
+
+
+def raise_initial_billing(*, engagement_key, quotation_number, line_no, company,
+                          service, amount, created_by="") -> dict | None:
+    """Flag the initial 50% of an ordered engagement as due for billing.
+    Skips if an initial-50% notification already exists for this engagement."""
+    if has_notification(engagement_key, "initial_50_billing"):
+        return None
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    qn = str(quotation_number or "").strip()
+    svc = (service or "").strip() or "service"
+    notif = {
+        "notif_id": f"INIT-{datetime.now():%Y%m%d%H%M%S%f}-{str(engagement_key)[:12]}",
+        "created_at": now, "type": "initial_50_billing", "engagement_key": engagement_key,
+        "quotation_number": qn, "line_no": line_no, "company": company, "service": svc,
+        "amount": float(amount or 0), "status": "pending",
+        "message": f"Initial 50% billing due: {company} — {svc} — "
+                   f"{float(amount or 0):,.0f} ({qn or 'no quotation no.'} line {line_no})",
+        "emailed": False, "billed_at": "", "attachments": "",
+    }
+    _append(pd.DataFrame([notif], columns=NOTIF_FIELDS), NOTIF_CSV, NOTIF_TABLE)
+    return notif
+
+
 def mark_billed(notif_id: str) -> None:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if _use_db():

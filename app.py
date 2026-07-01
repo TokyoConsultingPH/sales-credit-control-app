@@ -219,10 +219,24 @@ def render_quotation_form() -> None:
                 for i, r in enumerate(valid_lines)
             ]
             where = Q.save_quotations(records)
+            # Auto-flag the initial 50% of each engagement as due for billing.
+            flagged = 0
+            for rec in records:
+                ek = EN._engagement_key(rec["quotation_number"], rec["company"],
+                                        rec["order_date"], rec["line_no"])
+                n = EN.raise_initial_billing(
+                    engagement_key=ek, quotation_number=rec["quotation_number"],
+                    line_no=rec["line_no"], company=rec["company"],
+                    service=rec["type_of_service"], amount=rec["price"] * EN.FINAL_SHARE,
+                    created_by=rec["submitted_by"])
+                flagged += 1 if n else 0
             total = sum(rec["price"] for rec in records)
             extra = f", {len(stored)} file(s) attached" if stored else ""
             st.success(f"Saved **{len(records)} service line(s)** for **{company}** "
                        f"(total {total:,.0f}{extra}) to {where}.")
+            if flagged:
+                st.info(f"🔔 Flagged **initial 50%** of {flagged} engagement(s) as due for "
+                        f"billing (total {total * EN.FINAL_SHARE:,.0f}) — see **Due for Billing**.")
 
     st.divider()
     st.subheader("Recent ordered quotations")
@@ -251,7 +265,7 @@ def render_quotation_form() -> None:
 def render_billing_notifications() -> None:
     """Pending final-50% billing notifications with a 'mark as billed' action."""
     pending = EN.load_notifications(status="pending")
-    st.subheader(f"🔔 Pending final-50% billings ({len(pending)})")
+    st.subheader(f"🔔 Pending billings — initial & final 50% ({len(pending)})")
     if pending.empty:
         st.success("No pending billings. ✅")
         return
@@ -639,8 +653,8 @@ st.caption(f"Source: **{source_label}**  ·  grouped by **{dim_label}**  ·  "
 
 _pending = EN.pending_count()
 if _pending:
-    st.warning(f"🔔 {_pending} engagement(s) completed and awaiting **final 50% billing** — "
-               "see the **✅ Complete Engagement** page.")
+    st.warning(f"🔔 {_pending} billing item(s) pending (initial / final 50%) — "
+               "see the **Due for Billing** tab or **✅ Complete Engagement** page.")
 
 # Drill-down view: when a leaderboard item is selected, show its detail page.
 _drill = st.session_state.get("drill")
@@ -926,26 +940,30 @@ with t3:
     st.dataframe(od.style.format({"Outstanding": "{:,.0f}"}), use_container_width=True)
 
 with t4:
-    st.markdown("#### 🔔 Final 50% due — from completed engagements")
+    st.markdown("#### 🔔 Billing due — initial & final 50% (from quotations & completions)")
     fin = EN.load_notifications(status="pending")
     if fin.empty:
-        st.info("No final-50% billings pending. Complete an engagement on the "
-                "**✅ Complete Engagement** page to raise one.")
+        st.info("No billing items pending. Submit a quotation (flags the initial 50%) "
+                "or complete an engagement (flags the final 50%).")
     else:
+        _stage = fin["type"].map({"initial_50_billing": "Initial 50%",
+                                  "final_50_billing": "Final 50%"}).fillna(fin["type"])
         fin_view = pd.DataFrame({
+            "Stage": _stage,
             "Company": fin["company"],
             "Service": fin.get("service", ""),
             "Quotation": fin.get("quotation_number", ""),
             "Line": fin.get("line_no", ""),
-            "Final 50%": pd.to_numeric(fin["amount"], errors="coerce"),
+            "Amount": pd.to_numeric(fin["amount"], errors="coerce"),
             "Raised": fin["created_at"],
-            "Emailed": fin.get("emailed", ""),
         })
-        c = st.columns(2)
-        c[0].metric("Engagements awaiting final billing", f"{len(fin_view)}")
-        c[1].metric("Total final 50% due", money_compact(fin_view["Final 50%"].sum()),
-                    help=money(fin_view["Final 50%"].sum()))
-        st.dataframe(fin_view.style.format({"Final 50%": "{:,.0f}"}),
+        c = st.columns(3)
+        c[0].metric("Billing items pending", f"{len(fin_view)}")
+        c[1].metric("Initial 50% due",
+                    money_compact(fin_view.loc[fin_view["Stage"] == "Initial 50%", "Amount"].sum()))
+        c[2].metric("Final 50% due",
+                    money_compact(fin_view.loc[fin_view["Stage"] == "Final 50%", "Amount"].sum()))
+        st.dataframe(fin_view.style.format({"Amount": "{:,.0f}"}),
                      use_container_width=True, hide_index=True)
 
     st.divider()
