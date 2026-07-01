@@ -49,8 +49,8 @@ CUR = cfg.get("general", {}).get("currency_symbol", "")
 
 # Centered logo banner at the top of every page.
 if LOGO_PATH:
-    _lc = st.columns([2, 3, 2])
-    _lc[1].image(str(LOGO_PATH), use_container_width=True)
+    _lc = st.columns([2, 1, 2])
+    _lc[1].image(str(LOGO_PATH), width=200)
 
 DIMENSIONS = {"Branch": "branch", "Category": "category",
               "Classification": "classification", "PIC / staff": "pic"}
