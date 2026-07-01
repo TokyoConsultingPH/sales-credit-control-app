@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.config import load_config
+from src.config import load_config, normalize_branch, department_for
 from src import data_loader as DL
 from src import workbook_loader as W
 from src import db_loader as DB
@@ -408,6 +408,68 @@ def render_manage_users() -> None:
     st.dataframe(eng.style.format({"price": "{:,.0f}"}), use_container_width=True, hide_index=True)
 
 
+def render_sales_database() -> None:
+    st.title("🧾 Sales database")
+    tcf = find_tcf_workbook()
+    if not tcf:
+        st.info("No TCF workbook found in 'Sample file' or 'data'.")
+        return
+    tidy = load_tcf(str(tcf))
+    if tidy.empty:
+        st.info("No sales rows found.")
+        return
+    st.caption(f"All billing rows from **{tcf.name}**.")
+
+    d = tidy.copy()
+    view = pd.DataFrame({
+        "Date": d["date"], "Year": d["year"],
+        "Branch": d["branch"].map(lambda b: normalize_branch(cfg, b)),
+        "Department": d["category"].map(lambda c: department_for(cfg, c)),
+        "Category": d["category"], "Classification": d["classification"], "PIC": d["pic"],
+        "Client": d["company"], "Engagement": d["content"],
+        "Billed": d["invoiced_amt"], "Collected": d["collected_amt"],
+        "Outstanding": d["outstanding"], "Status": d["month_status"],
+    })
+
+    f1, f2, f3, f4 = st.columns(4)
+    years = sorted(view["Year"].dropna().unique())
+    ysel = f1.multiselect("Year", years, default=years)
+    brs = sorted(view["Branch"].dropna().unique())
+    bsel = f2.multiselect("Branch", brs, default=brs)
+    deps = sorted(view["Department"].dropna().unique())
+    dsel = f3.multiselect("Department", deps, default=deps)
+    q = f4.text_input("Search client / engagement").strip().lower()
+
+    fv = view[view["Year"].isin(ysel) & view["Branch"].isin(bsel) & view["Department"].isin(dsel)]
+    if q:
+        fv = fv[fv["Client"].astype(str).str.lower().str.contains(q)
+                | fv["Engagement"].astype(str).str.lower().str.contains(q)]
+
+    m = st.columns(4)
+    m[0].metric("Rows", f"{len(fv):,}")
+    m[1].metric("Billed", money_compact(fv["Billed"].sum()), help=money(fv["Billed"].sum()))
+    m[2].metric("Collected", money_compact(fv["Collected"].sum()), help=money(fv["Collected"].sum()))
+    m[3].metric("Outstanding", money_compact(fv["Outstanding"].sum()), help=money(fv["Outstanding"].sum()))
+
+    st.dataframe(
+        fv.sort_values("Date").style.format(
+            {"Billed": "{:,.0f}", "Collected": "{:,.0f}", "Outstanding": "{:,.0f}"}),
+        use_container_width=True, hide_index=True)
+
+    dl = st.columns(2)
+    dl[0].download_button("⬇️ Download (CSV)", fv.to_csv(index=False).encode("utf-8-sig"),
+                          file_name="sales_database.csv", mime="text/csv",
+                          use_container_width=True)
+    import io as _io
+    _buf = _io.BytesIO()
+    with pd.ExcelWriter(_buf, engine="xlsxwriter") as _xw:
+        fv.to_excel(_xw, index=False, sheet_name="Sales")
+    dl[1].download_button("⬇️ Download (Excel)", _buf.getvalue(),
+                          file_name="sales_database.xlsx",
+                          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          use_container_width=True)
+
+
 def render_client_database() -> None:
     st.title("🗂️ Client database")
     st.caption("Built automatically from reported (signed) quotations.")
@@ -465,7 +527,8 @@ if st.sidebar.button("Log out", use_container_width=True):
 
 _pending_badge = EN.pending_count()
 _complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
-_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label, "🗂️ Client Database"]
+_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label,
+          "🧾 Sales Database", "🗂️ Client Database"]
 if _is_admin:
     _pages.append("👥 Manage Users")
 page = st.sidebar.radio("Page", _pages)
@@ -475,6 +538,9 @@ if page == "📝 Report Ordered Quotation":
     st.stop()
 if page.startswith("✅ Complete Engagement"):
     render_complete_engagement()
+    st.stop()
+if page == "🧾 Sales Database":
+    render_sales_database()
     st.stop()
 if page == "👥 Manage Users":
     render_manage_users()

@@ -48,7 +48,9 @@ def normalize_branch(cfg: dict, branch) -> str:
     tax = cfg.get("taxonomy", {}) or {}
     raw = {k.upper(): v for k, v in (tax.get("branch_map") or _DEFAULT_BRANCH_MAP).items()}
     s = str(branch or "").strip()
-    return raw.get(s.upper(), s.title() if s else "Unknown")
+    if not s or s.lower() in ("nan", "none"):
+        return "Unknown"
+    return raw.get(s.upper(), s.title())
 
 
 def department_for(cfg: dict, category) -> str:
