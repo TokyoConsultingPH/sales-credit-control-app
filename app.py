@@ -581,6 +581,12 @@ od = M.overdue_detail(df, cfg, as_of)
 hr = od[od["High Risk"]] if not od.empty else od
 hr_amt = float(hr["Outstanding"].sum()) if not hr.empty else 0.0
 coll_pct = (total_rec / total_inv * 100) if total_inv else 0.0
+# Year-to-date sales: billed from Jan 1 of the as-of year through as_of.
+if "date" in df.columns and df["date"].notna().any():
+    _ytd_start = pd.Timestamp(year=as_of.year, month=1, day=1)
+    ytd_sales = df.loc[df["date"] >= _ytd_start, "invoiced"].sum()
+else:
+    ytd_sales = total_inv
 
 # Monthly totals (for the MoM delta and the trend chart).
 _mt = df.dropna(subset=["date"]).copy()
@@ -598,14 +604,16 @@ def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
         st.metric(label, value, delta=delta, delta_color=delta_color, help=help)
 
 
-k = st.columns(5)
-_kpi(k[0], "Billed (invoiced)", money(total_inv),
+k = st.columns(6)
+_kpi(k[0], f"YTD sales ({as_of.year})", money(ytd_sales),
+     f"through {as_of.date()}", "off", help="Billed from Jan 1 to the as-of date.")
+_kpi(k[1], "Billed (selected)", money(total_inv),
      f"{mom:+.0f}% MoM" if mom is not None else None)
-_kpi(k[1], "Collected", money(total_rec), f"{coll_pct:.0f}% collection rate", "off")
-_kpi(k[2], "Outstanding AR", money(total_ar),
+_kpi(k[2], "Collected", money(total_rec), f"{coll_pct:.0f}% collection rate", "off")
+_kpi(k[3], "Outstanding AR", money(total_ar),
      f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else None, "off")
-_kpi(k[3], "High-risk overdue", money(hr_amt), f"{len(hr)} items", "off")
-_kpi(k[4], "Due for billing", f"{len(due)} items", money(due_amt), "off")
+_kpi(k[4], "High-risk overdue", money(hr_amt), f"{len(hr)} items", "off")
+_kpi(k[5], "Due for billing", f"{len(due)} items", money(due_amt), "off")
 
 # --------------------------------------------------------------------------- #
 # At a glance
