@@ -698,76 +698,74 @@ with g2:
 st.markdown("#### Leaderboards")
 
 
-def _leaderboard(col, series, title, n=8):
+def _leaderboard_click(col, agg, title, key, n=8):
+    """Render a clickable horizontal-bar leaderboard; return the clicked label."""
     with col:
-        series = series[series > 0]
-        if series.empty:
+        agg = agg[agg["Amount"] > 0].sort_values("Amount", ascending=True).tail(n)
+        if agg.empty:
             st.caption(f"No data for {title.lower()}.")
-            return
-        d = series.sort_values(ascending=True).tail(n).reset_index()
-        d.columns = ["Label", "Amount"]
-        d["Label"] = d["Label"].astype(str).str.slice(0, 28)
-        fig = px.bar(d, x="Amount", y="Label", orientation="h", title=title, text="Amount")
+            return None
+        fig = px.bar(agg, x="Amount", y="Label", orientation="h", title=title, text="Amount")
         fig.update_traces(marker_color="#534AB7", texttemplate="%{text:,.0f}",
                           textposition="outside", cliponaxis=False)
         fig.update_layout(height=300, margin=dict(t=40, b=0, l=0, r=30),
                           yaxis_title=None, xaxis_title=None, xaxis_visible=False, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
-
-
-lb = st.columns(3)
-sel_client = None
-with lb[0]:
-    cs = df.groupby("client")["invoiced"].sum()
-    cs = cs[cs > 0].sort_values(ascending=True).tail(8).reset_index()
-    cs.columns = ["Client", "Amount"]
-    if cs.empty:
-        st.caption("No client data.")
-    else:
-        figc = px.bar(cs, x="Amount", y="Client", orientation="h",
-                      title="Top clients (billed) — click a bar", text="Amount")
-        figc.update_traces(marker_color="#534AB7", texttemplate="%{text:,.0f}",
-                           textposition="outside", cliponaxis=False)
-        figc.update_layout(height=300, margin=dict(t=40, b=0, l=0, r=30),
-                           yaxis_title=None, xaxis_title=None, xaxis_visible=False, showlegend=False)
-        ev = st.plotly_chart(figc, use_container_width=True, on_select="rerun", key="lb_clients")
+        ev = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key=key)
         pts = (ev or {}).get("selection", {}).get("points", [])
-        if pts:
-            sel_client = pts[0].get("y")
+        return pts[0].get("y") if pts else None
 
-_eng = df.copy()
-_eng["_lbl"] = (_eng["engagement"].astype(str).str.slice(0, 24) + " · "
-                + _eng["client"].astype(str).str.slice(0, 16))
-_leaderboard(lb[1], df.groupby("department")["invoiced"].sum(), f"Top {dim_label.lower()}s (billed)")
-_leaderboard(lb[2], _eng.groupby("_lbl")["invoiced"].sum(), "Top engagements (billed)")
 
-if sel_client:
+def _sales_detail(title, sub):
+    """Detail panel for a selected client / department / engagement."""
     with st.container(border=True):
-        sub = df[df["client"] == sel_client]
-        st.markdown(f"#### 🧾 Sales detail — {sel_client}")
-        d1, d2, d3, d4 = st.columns(4)
-        d1.metric("Billed", money_compact(sub["invoiced"].sum()), help=money(sub["invoiced"].sum()))
-        d2.metric("Collected", money_compact(sub["received"].sum()), help=money(sub["received"].sum()))
-        d3.metric("Outstanding", money_compact(sub["outstanding"].sum()), help=money(sub["outstanding"].sum()))
-        d4.metric("Engagements", f"{sub['engagement'].nunique()}")
+        st.markdown(f"#### 🧾 Sales detail — {title}")
+        m = st.columns(5)
+        m[0].metric("Billed", money_compact(sub["invoiced"].sum()), help=money(sub["invoiced"].sum()))
+        m[1].metric("Collected", money_compact(sub["received"].sum()), help=money(sub["received"].sum()))
+        m[2].metric("Outstanding", money_compact(sub["outstanding"].sum()), help=money(sub["outstanding"].sum()))
+        m[3].metric("Clients", f"{sub['client'].nunique()}")
+        m[4].metric("Engagements", f"{sub['engagement'].nunique()}")
         ms = sub.dropna(subset=["date"]).copy()
         if not ms.empty:
             ms["Month"] = ms["date"].dt.to_period("M").dt.to_timestamp()
-            mm = ms.groupby("Month")[["invoiced", "received"]].sum().reset_index()
+            mm = ms.groupby("Month")["invoiced"].sum().reset_index()
             fig = px.bar(mm, x="Month", y="invoiced", title="Monthly billings")
             fig.update_traces(marker_color="#378ADD")
             fig.update_layout(height=240, margin=dict(t=40, b=0, l=0, r=0),
                               yaxis_title=None, xaxis_title=None)
             st.plotly_chart(fig, use_container_width=True)
-        _dc = {"date": "Date", "department": "Group", "engagement": "Engagement",
-               "invoiced": "Billed", "received": "Collected", "outstanding": "Outstanding",
-               "status": "Status"}
-        detail = sub.rename(columns=_dc)[[v for v in _dc.values() if v in sub.rename(columns=_dc).columns]]
-        st.dataframe(detail.sort_values("Date").style.format(
+        dc = {"date": "Date", "client": "Client", "department": "Group",
+              "engagement": "Engagement", "invoiced": "Billed", "received": "Collected",
+              "outstanding": "Outstanding", "status": "Status"}
+        det = sub.rename(columns=dc)
+        det = det[[v for v in dc.values() if v in det.columns]]
+        st.dataframe(det.sort_values("Date").style.format(
             {"Billed": "{:,.0f}", "Collected": "{:,.0f}", "Outstanding": "{:,.0f}"}),
             use_container_width=True, hide_index=True)
-else:
-    st.caption("💡 Click a bar in **Top clients** to see that client's sales detail.")
+
+
+lb = st.columns(3)
+_cl = df.groupby("client")["invoiced"].sum().reset_index()
+_cl.columns = ["Label", "Amount"]
+sel_client = _leaderboard_click(lb[0], _cl, "Top clients (billed) — click", "lb_clients")
+
+_dp = df.groupby("department")["invoiced"].sum().reset_index()
+_dp.columns = ["Label", "Amount"]
+sel_dept = _leaderboard_click(lb[1], _dp, f"Top {dim_label.lower()}s (billed) — click", "lb_depts")
+
+_en = df.copy()
+_en["Label"] = _en["engagement"].astype(str) + " · " + _en["client"].astype(str)
+_eng_agg = _en.groupby("Label")["invoiced"].sum().reset_index().rename(columns={"invoiced": "Amount"})
+sel_eng = _leaderboard_click(lb[2], _eng_agg, "Top engagements (billed) — click", "lb_eng")
+
+if sel_client:
+    _sales_detail(sel_client, df[df["client"] == sel_client])
+if sel_dept:
+    _sales_detail(f"{dim_label}: {sel_dept}", df[df["department"] == sel_dept])
+if sel_eng:
+    _sales_detail(sel_eng, _en[_en["Label"] == sel_eng])
+if not (sel_client or sel_dept or sel_eng):
+    st.caption("💡 Click any bar in the leaderboards to drill into its sales detail.")
 
 # --------------------------------------------------------------------------- #
 # Alerts
