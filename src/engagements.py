@@ -21,13 +21,14 @@ COMPLETIONS_TABLE = "engagement_completions"
 NOTIF_TABLE = "billing_notifications"
 
 COMPLETION_FIELDS = [
-    "completed_at", "completed_by", "engagement_key", "quotation_number",
-    "company", "branch", "total_fee", "final_amount", "completion_date", "notes",
-    "attachments",
+    "completed_at", "completed_by", "engagement_key", "quotation_number", "line_no",
+    "type_of_service", "service_description", "company", "branch",
+    "engagement_fee", "final_amount", "completion_date", "notes", "attachments",
 ]
 NOTIF_FIELDS = [
-    "notif_id", "created_at", "type", "engagement_key", "quotation_number",
-    "company", "amount", "status", "message", "emailed", "billed_at", "attachments",
+    "notif_id", "created_at", "type", "engagement_key", "quotation_number", "line_no",
+    "company", "service", "amount", "status", "message", "emailed", "billed_at",
+    "attachments",
 ]
 
 FINAL_SHARE = 0.5
@@ -42,9 +43,10 @@ def _engine():
     return make_engine({}, None, None)
 
 
-def _engagement_key(quotation_number: str, company: str, order_date: str) -> str:
-    q = str(quotation_number or "").strip()
-    return q if q else f"{str(company).strip()} @ {str(order_date).strip()}"
+def _engagement_key(quotation_number: str, company: str, order_date: str, line_no) -> str:
+    """A key unique to one service line (engagement) within a quotation."""
+    q = str(quotation_number or "").strip() or f"{str(company).strip()} @ {str(order_date).strip()}"
+    return f"{q} #L{str(line_no).strip() if line_no is not None else '?'}"
 
 
 # --------------------------------------------------------------------------- #
@@ -77,48 +79,53 @@ def _read(csv_path: Path, table: str, fields: list[str]) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # Pending engagements (from logged quotations, not yet completed)
 # --------------------------------------------------------------------------- #
+PENDING_COLUMNS = ["engagement_key", "quotation_number", "line_no", "company", "branch",
+                   "type_of_service", "service_description", "engagement_fee", "final_amount"]
+
+
 def pending_engagements() -> pd.DataFrame:
-    """One row per logged quotation not yet marked complete, with total fee
-    and the computed final-50% amount."""
+    """One row per service line (engagement) not yet marked complete, with that
+    engagement's fee and its computed final-50% amount."""
     qdf = Q.load_quotations()
     if qdf.empty:
-        return pd.DataFrame(columns=["engagement_key", "quotation_number", "company",
-                                     "branch", "lines", "total_fee", "final_amount"])
+        return pd.DataFrame(columns=PENDING_COLUMNS)
     qdf = qdf.copy()
-    qdf["price"] = pd.to_numeric(qdf.get("price"), errors="coerce").fillna(0.0)
+    qdf["engagement_fee"] = pd.to_numeric(qdf.get("price"), errors="coerce").fillna(0.0)
     qdf["engagement_key"] = [
-        _engagement_key(q, c, o) for q, c, o in
-        zip(qdf.get("quotation_number", ""), qdf.get("company", ""), qdf.get("order_date", ""))
+        _engagement_key(q, c, o, ln) for q, c, o, ln in
+        zip(qdf.get("quotation_number", ""), qdf.get("company", ""),
+            qdf.get("order_date", ""), qdf.get("line_no", ""))
     ]
-    grp = qdf.groupby("engagement_key").agg(
-        quotation_number=("quotation_number", "first"),
-        company=("company", "first"),
-        branch=("branch", "first"),
-        lines=("price", "size"),
-        total_fee=("price", "sum"),
-    ).reset_index()
-    grp["final_amount"] = (grp["total_fee"] * FINAL_SHARE).round(2)
+    out = qdf.drop_duplicates("engagement_key").copy()
+    out["final_amount"] = (out["engagement_fee"] * FINAL_SHARE).round(2)
+    out = out.rename(columns={"line_no": "line_no", "type_of_service": "type_of_service",
+                              "service_description": "service_description"})
+    out = out[[c for c in PENDING_COLUMNS if c in out.columns]]
 
     done = set(_read(COMPLETIONS_CSV, COMPLETIONS_TABLE, COMPLETION_FIELDS)
                .get("engagement_key", pd.Series(dtype=str)).astype(str))
-    grp = grp[~grp["engagement_key"].astype(str).isin(done)]
-    return grp.reset_index(drop=True)
+    out = out[~out["engagement_key"].astype(str).isin(done)]
+    return out.reset_index(drop=True)
 
 
 # --------------------------------------------------------------------------- #
 # Complete an engagement -> raise a billing notification
 # --------------------------------------------------------------------------- #
-def complete_engagement(*, completed_by, engagement_key, quotation_number, company,
-                        branch, total_fee, final_amount, completion_date, notes,
+def complete_engagement(*, completed_by, engagement_key, quotation_number, line_no,
+                        type_of_service, service_description, company, branch,
+                        engagement_fee, final_amount, completion_date, notes,
                         attachments="") -> dict:
-    """Record the completion and create a pending final-50% notification.
-    `attachments` is a '; '-joined list of stored Notice-of-Completion filenames.
-    Returns the notification dict."""
+    """Record completion of one engagement (service line) and create a pending
+    final-50% notification. `attachments` is a '; '-joined list of stored
+    Notice-of-Completion filenames. Returns the notification dict."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    qn = str(quotation_number or "").strip()
+    svc = (type_of_service or "").strip() or "service"
     completion = {
         "completed_at": now, "completed_by": (completed_by or "").strip(),
-        "engagement_key": engagement_key, "quotation_number": (quotation_number or "").strip(),
-        "company": company, "branch": branch, "total_fee": float(total_fee or 0),
+        "engagement_key": engagement_key, "quotation_number": qn, "line_no": line_no,
+        "type_of_service": svc, "service_description": (service_description or "").strip(),
+        "company": company, "branch": branch, "engagement_fee": float(engagement_fee or 0),
         "final_amount": float(final_amount or 0),
         "completion_date": str(completion_date or ""), "notes": (notes or "").strip(),
         "attachments": attachments or "",
@@ -126,13 +133,15 @@ def complete_engagement(*, completed_by, engagement_key, quotation_number, compa
     _append(pd.DataFrame([completion], columns=COMPLETION_FIELDS),
             COMPLETIONS_CSV, COMPLETIONS_TABLE)
 
+    where = f"{qn or 'no quotation no.'} line {line_no}"
+    desc = f" — {completion['service_description']}" if completion['service_description'] else ""
     notif = {
-        "notif_id": f"BILL-{datetime.now():%Y%m%d%H%M%S}-{str(engagement_key)[:12]}",
+        "notif_id": f"BILL-{datetime.now():%Y%m%d%H%M%S}-{str(engagement_key)[:16]}",
         "created_at": now, "type": "final_50_billing", "engagement_key": engagement_key,
-        "quotation_number": completion["quotation_number"], "company": company,
+        "quotation_number": qn, "line_no": line_no, "company": company, "service": svc,
         "amount": float(final_amount or 0), "status": "pending",
-        "message": f"Final 50% billing due: {company} — {float(final_amount or 0):,.0f} "
-                   f"({completion['quotation_number'] or 'no quotation no.'})",
+        "message": f"Final 50% billing due: {company} — {svc}{desc} — "
+                   f"{float(final_amount or 0):,.0f} ({where})",
         "emailed": False, "billed_at": "", "attachments": attachments or "",
     }
     _append(pd.DataFrame([notif], columns=NOTIF_FIELDS), NOTIF_CSV, NOTIF_TABLE)

@@ -216,21 +216,31 @@ def render_complete_engagement() -> None:
 
     pend = EN.pending_engagements()
     if pend.empty:
-        st.info("No logged quotations awaiting completion. Add one on the "
+        st.info("No engagements awaiting completion. Add a quotation on the "
                 "**📝 Report Ordered Quotation** page first.")
     else:
+        st.caption(f"{len(pend)} engagement(s) awaiting completion. "
+                   "One quotation may list several engagements — pick the exact one.")
         labels = {
-            f"{r.engagement_key}  ·  {r.company}  ·  total {r.total_fee:,.0f}": r
+            f"{r.quotation_number or 'no-quo'} · line {r.line_no} · {r.type_of_service} "
+            f"· {r.company} · fee {r.engagement_fee:,.0f}": r
             for r in pend.itertuples()
         }
         with st.form("complete_engagement", clear_on_submit=True):
-            choice = st.selectbox("Engagement to complete", list(labels))
+            choice = st.selectbox("Engagement to complete (one service line)", list(labels))
             row = labels[choice]
-            final_amt = round(float(row.total_fee) * EN.FINAL_SHARE, 2)
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Total fee", f"{row.total_fee:,.0f}")
+            final_amt = round(float(row.engagement_fee) * EN.FINAL_SHARE, 2)
+
+            st.markdown(
+                f"**Engagement being completed**  \n"
+                f"🏢 {row.company} · {row.branch}  \n"
+                f"🧾 Quotation **{row.quotation_number or 'no quotation no.'}**, line **{row.line_no}**  \n"
+                f"🛠️ **{row.type_of_service}**"
+                + (f" — {row.service_description}" if str(row.service_description).strip() else ""))
+            m1, m2 = st.columns(2)
+            m1.metric("Engagement fee", f"{row.engagement_fee:,.0f}")
             m2.metric("Final 50% to bill", f"{final_amt:,.0f}")
-            m3.metric("Service lines", int(row.lines))
+
             c1, c2 = st.columns(2)
             completed_by = c1.text_input("Your name *")
             completion_date = c2.date_input("Completion date", value=pd.Timestamp.today())
@@ -249,9 +259,10 @@ def render_complete_engagement() -> None:
                 stored = AT.save_attachments(f"NOC-{row.engagement_key}", noc_files)
                 notif = EN.complete_engagement(
                     completed_by=completed_by, engagement_key=row.engagement_key,
-                    quotation_number=row.quotation_number, company=row.company,
-                    branch=row.branch, total_fee=row.total_fee, final_amount=final_amt,
-                    completion_date=completion_date, notes=notes,
+                    quotation_number=row.quotation_number, line_no=row.line_no,
+                    type_of_service=row.type_of_service, service_description=row.service_description,
+                    company=row.company, branch=row.branch, engagement_fee=row.engagement_fee,
+                    final_amount=final_amt, completion_date=completion_date, notes=notes,
                     attachments="; ".join(stored))
                 sent, mmsg = MAIL.send(
                     cfg, subject=f"[Billing] Final 50% due — {row.company}",
