@@ -576,28 +576,93 @@ total_inv = df["invoiced"].sum()
 total_rec = df["received"].sum()
 total_ar = df["outstanding"].sum()
 due = M.due_for_billing(df, cfg, as_of)
+due_amt = float(due["Amount"].sum()) if (not due.empty and "Amount" in due) else 0.0
+od = M.overdue_detail(df, cfg, as_of)
+hr = od[od["High Risk"]] if not od.empty else od
+hr_amt = float(hr["Outstanding"].sum()) if not hr.empty else 0.0
+coll_pct = (total_rec / total_inv * 100) if total_inv else 0.0
+
+# Monthly totals (for the MoM delta and the trend chart).
+_mt = df.dropna(subset=["date"]).copy()
+monthly = None
+mom = None
+if not _mt.empty:
+    _mt["Month"] = _mt["date"].dt.to_period("M").dt.to_timestamp()
+    monthly = _mt.groupby("Month")[["invoiced", "received"]].sum().sort_index()
+    if len(monthly) >= 2 and monthly["invoiced"].iloc[-2]:
+        mom = (monthly["invoiced"].iloc[-1] - monthly["invoiced"].iloc[-2]) / monthly["invoiced"].iloc[-2] * 100
+
+
+def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
+    with col.container(border=True):
+        st.metric(label, value, delta=delta, delta_color=delta_color, help=help)
+
 
 k = st.columns(5)
-k[0].metric("Billed (invoiced)", money(total_inv))
-k[1].metric("Collected", money(total_rec))
-k[2].metric("Outstanding AR", money(total_ar))
-k[3].metric("Collection %", f"{(total_rec / total_inv * 100):.0f}%" if total_inv else "-")
-k[4].metric("Due for billing", f"{len(due)} items")
+_kpi(k[0], "Billed (invoiced)", money(total_inv),
+     f"{mom:+.0f}% MoM" if mom is not None else None)
+_kpi(k[1], "Collected", money(total_rec), f"{coll_pct:.0f}% collection rate", "off")
+_kpi(k[2], "Outstanding AR", money(total_ar),
+     f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else None, "off")
+_kpi(k[3], "High-risk overdue", money(hr_amt), f"{len(hr)} items", "off")
+_kpi(k[4], "Due for billing", f"{len(due)} items", money(due_amt), "off")
+
+# --------------------------------------------------------------------------- #
+# At a glance
+# --------------------------------------------------------------------------- #
+st.markdown("#### At a glance")
+g1, g2 = st.columns([3, 2])
+with g1:
+    if monthly is not None and not monthly.empty:
+        long = monthly.reset_index().melt(
+            "Month", value_vars=["invoiced", "received"], var_name="Metric", value_name="Amount")
+        long["Metric"] = long["Metric"].map({"invoiced": "Billed", "received": "Collected"})
+        fig = px.area(long, x="Month", y="Amount", color="Metric",
+                      title="Billings vs collections by month",
+                      color_discrete_map={"Billed": "#378ADD", "Collected": "#1D9E75"})
+        fig.update_layout(height=290, margin=dict(t=40, b=0, l=0, r=0),
+                          legend=dict(orientation="h", y=1.12, title=None))
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No dated data to chart.")
+with g2:
+    aging = M.ar_aging(df, cfg, as_of)
+    buckets = [c for c in aging.columns if c not in ("Department", "Total AR")]
+    if not aging.empty and buckets and aging[buckets].to_numpy().sum() > 0:
+        tot = aging[buckets].sum()
+        ad = pd.DataFrame({"Bucket": tot.index, "Amount": tot.values})
+        fig = px.pie(ad, names="Bucket", values="Amount", hole=0.58, title="AR aging",
+                     color_discrete_sequence=["#9FE1CB", "#FAC775", "#F0997B", "#E24B4A", "#A32D2D"])
+        fig.update_layout(height=290, margin=dict(t=40, b=0, l=0, r=0),
+                          legend=dict(orientation="h", y=-0.1, title=None))
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No open AR.")
 
 # --------------------------------------------------------------------------- #
 # Alerts
 # --------------------------------------------------------------------------- #
 alerts = M.build_alerts(df, cfg, as_of)
-if alerts:
-    st.subheader(f"⚠️ Monitoring alerts ({len(alerts)})")
+st.markdown("#### Monitoring")
+if not alerts:
+    st.success("✅ No alerts — all departments within thresholds.")
+else:
+    sev = {s: sum(1 for a in alerts if a["severity"] == s) for s in ("high", "medium", "low")}
+    st.markdown(
+        f"<span style='background:#FCEBEB;color:#A32D2D;padding:3px 12px;border-radius:12px;margin-right:8px'>"
+        f"● High {sev['high']}</span>"
+        f"<span style='background:#FAEEDA;color:#854F0B;padding:3px 12px;border-radius:12px;margin-right:8px'>"
+        f"● Medium {sev['medium']}</span>"
+        f"<span style='background:#F1EFE8;color:#5F5E5A;padding:3px 12px;border-radius:12px'>"
+        f"● Low {sev['low']}</span>", unsafe_allow_html=True)
+    st.write("")
     icon = {"high": "🔴", "medium": "🟠", "low": "🟡"}
     cols = st.columns(2)
     for n, a in enumerate(alerts[:12]):
-        cols[n % 2].markdown(f"{icon.get(a['severity'], '•')} **[{a['category']}]** {a['message']}")
+        with cols[n % 2].container(border=True):
+            st.markdown(f"{icon.get(a['severity'], '•')} **[{a['category']}]** {a['message']}")
     if len(alerts) > 12:
-        st.caption(f"…and {len(alerts) - 12} more (see Excel report).")
-else:
-    st.success("✅ No alerts — all departments within thresholds.")
+        st.caption(f"…and {len(alerts) - 12} more (see the Excel report).")
 
 st.divider()
 
