@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+data/
+Sample file/
+output/
+scratchpad_*
+*.xlsx
+*.pdf
+.streamlit/secrets.toml
