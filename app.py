@@ -928,33 +928,20 @@ def _drill_to(dtype, value):
     st.rerun()
 
 
-st.caption("Pick an item and click **View sales details** to open its full breakdown.")
 lb = st.columns(3)
 with lb[0]:
     _cl = df.groupby("client")["invoiced"].sum().reset_index()
     _cl.columns = ["Label", "Amount"]
-    if _lb_chart(_cl, "Top clients (billed)"):
-        opts = _cl[_cl["Amount"] > 0].sort_values("Amount", ascending=False)["Label"].tolist()
-        pick = st.selectbox("Client", opts, key="pick_client")
-        if st.button("🔎 View sales details", key="btn_client", use_container_width=True):
-            _drill_to("client", pick)
+    _lb_chart(_cl, "Top clients (billed)")
 with lb[1]:
     _dp = df.groupby("department")["invoiced"].sum().reset_index()
     _dp.columns = ["Label", "Amount"]
-    if _lb_chart(_dp, f"Top {dim_label.lower()}s (billed)"):
-        opts = _dp[_dp["Amount"] > 0].sort_values("Amount", ascending=False)["Label"].tolist()
-        pick = st.selectbox(dim_label, opts, key="pick_dept")
-        if st.button("🔎 View sales details", key="btn_dept", use_container_width=True):
-            _drill_to("department", pick)
+    _lb_chart(_dp, f"Top {dim_label.lower()}s (billed)")
 with lb[2]:
     _en = df.copy()
     _en["Label"] = _en["engagement"].astype(str) + " · " + _en["client"].astype(str)
     _ea = _en.groupby("Label")["invoiced"].sum().reset_index().rename(columns={"invoiced": "Amount"})
-    if _lb_chart(_ea, "Top engagements (billed)"):
-        opts = _ea[_ea["Amount"] > 0].sort_values("Amount", ascending=False)["Label"].tolist()
-        pick = st.selectbox("Engagement", opts, key="pick_eng")
-        if st.button("🔎 View sales details", key="btn_eng", use_container_width=True):
-            _drill_to("engagement", pick)
+    _lb_chart(_ea, "Top engagements (billed)")
 
 # --------------------------------------------------------------------------- #
 # Alerts
