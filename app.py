@@ -418,55 +418,70 @@ def render_sales_database() -> None:
     if tidy.empty:
         st.info("No sales rows found.")
         return
-    st.caption(f"All billing rows from **{tcf.name}**.")
 
-    d = tidy.copy()
-    view = pd.DataFrame({
-        "Date": d["date"], "Year": d["year"],
-        "Branch": d["branch"].map(lambda b: normalize_branch(cfg, b)),
-        "Department": d["category"].map(lambda c: department_for(cfg, c)),
-        "Category": d["category"], "Classification": d["classification"], "PIC": d["pic"],
-        "Client": d["company"], "Engagement": d["content"],
-        "Billed": d["invoiced_amt"], "Collected": d["collected_amt"],
-        "Outstanding": d["outstanding"], "Status": d["month_status"],
-    })
+    years = sorted(int(y) for y in tidy["year"].dropna().unique())
+    default_idx = years.index(2026) if 2026 in years else len(years) - 1
+    year = st.selectbox("Credit Control year", years, index=default_idx)
+    st.caption(f"**Credit Control {year}** layout — one row per engagement with monthly "
+               f"fees (Jan–Dec), from {tcf.name}.")
 
-    f1, f2, f3, f4 = st.columns(4)
-    years = sorted(view["Year"].dropna().unique())
-    ysel = f1.multiselect("Year", years, default=years)
-    brs = sorted(view["Branch"].dropna().unique())
-    bsel = f2.multiselect("Branch", brs, default=brs)
-    deps = sorted(view["Department"].dropna().unique())
-    dsel = f3.multiselect("Department", deps, default=deps)
-    q = f4.text_input("Search client / engagement").strip().lower()
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    d = tidy[tidy["year"] == year].copy()
+    d["MonthAbbr"] = d["date"].dt.strftime("%b")
+    idcols = ["company", "content", "branch", "classification", "category", "pic"]
 
-    fv = view[view["Year"].isin(ysel) & view["Branch"].isin(bsel) & view["Department"].isin(dsel)]
+    piv = d.pivot_table(index=idcols, columns="MonthAbbr", values="fee",
+                        aggfunc="sum", fill_value=0.0)
+    for mm in months:
+        if mm not in piv.columns:
+            piv[mm] = 0.0
+    piv = piv[months]
+    meta = d.groupby(idcols).agg(**{"TOTAL SERVICE FEE": ("total_fee", "first"),
+                                    "Status": ("status_overall", "first")})
+    out = meta.join(piv).reset_index()
+    out["branch"] = out["branch"].map(lambda b: normalize_branch(cfg, b))
+    out = out.rename(columns={"company": "Company", "content": "Engagement",
+                              "branch": "Branch", "classification": "Classification",
+                              "category": "Category", "pic": "PIC"})
+    ordered = (["Company", "Engagement", "Branch", "Classification", "Category", "PIC",
+                "Status", "TOTAL SERVICE FEE"] + months)
+    out = out[[c for c in ordered if c in out.columns]]
+
+    f1, f2, f3 = st.columns([1, 1, 2])
+    brs = sorted(out["Branch"].dropna().unique())
+    bsel = f1.multiselect("Branch", brs, default=brs)
+    cats = sorted(out["Category"].dropna().unique())
+    csel = f2.multiselect("Category", cats, default=cats)
+    q = f3.text_input("Search company / engagement").strip().lower()
+
+    fv = out[out["Branch"].isin(bsel) & out["Category"].isin(csel)]
     if q:
-        fv = fv[fv["Client"].astype(str).str.lower().str.contains(q)
+        fv = fv[fv["Company"].astype(str).str.lower().str.contains(q)
                 | fv["Engagement"].astype(str).str.lower().str.contains(q)]
 
-    m = st.columns(4)
-    m[0].metric("Rows", f"{len(fv):,}")
-    m[1].metric("Billed", money_compact(fv["Billed"].sum()), help=money(fv["Billed"].sum()))
-    m[2].metric("Collected", money_compact(fv["Collected"].sum()), help=money(fv["Collected"].sum()))
-    m[3].metric("Outstanding", money_compact(fv["Outstanding"].sum()), help=money(fv["Outstanding"].sum()))
+    m = st.columns(3)
+    m[0].metric("Engagements", f"{len(fv):,}")
+    m[1].metric("Total service fees", money_compact(fv["TOTAL SERVICE FEE"].sum()),
+                help=money(fv["TOTAL SERVICE FEE"].sum()))
+    m[2].metric(f"Billed in {year}", money_compact(fv[months].to_numpy().sum()),
+                help=money(fv[months].to_numpy().sum()))
 
-    st.dataframe(
-        fv.sort_values("Date").style.format(
-            {"Billed": "{:,.0f}", "Collected": "{:,.0f}", "Outstanding": "{:,.0f}"}),
-        use_container_width=True, hide_index=True)
+    numfmt = {mm: "{:,.0f}" for mm in months}
+    numfmt["TOTAL SERVICE FEE"] = "{:,.0f}"
+    st.dataframe(fv.style.format(numfmt), use_container_width=True, hide_index=True)
 
-    dl = st.columns(2)
-    dl[0].download_button("⬇️ Download (CSV)", fv.to_csv(index=False).encode("utf-8-sig"),
-                          file_name="sales_database.csv", mime="text/csv",
-                          use_container_width=True)
     import io as _io
     _buf = _io.BytesIO()
     with pd.ExcelWriter(_buf, engine="xlsxwriter") as _xw:
-        fv.to_excel(_xw, index=False, sheet_name="Sales")
-    dl[1].download_button("⬇️ Download (Excel)", _buf.getvalue(),
-                          file_name="sales_database.xlsx",
+        fv.to_excel(_xw, index=False, sheet_name=f"Credit Control {year}")
+    dl = st.columns(2)
+    dl[0].download_button("⬇️ Download (Excel)", _buf.getvalue(),
+                          file_name=f"credit_control_{year}.xlsx",
                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          use_container_width=True)
+    dl[1].download_button("⬇️ Download (CSV)", fv.to_csv(index=False).encode("utf-8-sig"),
+                          file_name=f"credit_control_{year}.csv", mime="text/csv",
                           use_container_width=True)
 
 
