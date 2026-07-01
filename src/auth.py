@@ -13,12 +13,21 @@ import streamlit as st
 
 from src import registry as REG
 
-_LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+_ASSETS = Path(__file__).resolve().parent.parent / "assets"
+
+
+def _find_logo():
+    for name in ("logo.png", "logo.jpg", "logo.jpeg"):
+        if (_ASSETS / name).exists():
+            return _ASSETS / name
+    imgs = sorted(_ASSETS.glob("*.png")) + sorted(_ASSETS.glob("*.jpg")) + sorted(_ASSETS.glob("*.jpeg"))
+    return imgs[0] if imgs else None
 
 
 def _logo() -> None:
-    if _LOGO.exists():
-        st.image(str(_LOGO), width=320)
+    p = _find_logo()
+    if p:
+        st.image(str(p), width=320)
 
 
 def _master_password() -> str | None:

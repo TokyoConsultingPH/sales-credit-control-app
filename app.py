@@ -29,10 +29,21 @@ from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
 SAMPLE = ROOT / "data" / "sample_sales.csv"
-LOGO_PATH = ROOT / "assets" / "logo.png"
+
+
+def _find_logo():
+    d = ROOT / "assets"
+    for name in ("logo.png", "logo.jpg", "logo.jpeg"):
+        if (d / name).exists():
+            return d / name
+    imgs = sorted(d.glob("*.png")) + sorted(d.glob("*.jpg")) + sorted(d.glob("*.jpeg"))
+    return imgs[0] if imgs else None
+
+
+LOGO_PATH = _find_logo()
 
 st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
-if LOGO_PATH.exists():
+if LOGO_PATH:
     st.logo(str(LOGO_PATH), size="large")
 USER = require_login()
 cfg = load_config()
@@ -577,7 +588,7 @@ def render_client_database() -> None:
 # --------------------------------------------------------------------------- #
 # Sidebar — page selector
 # --------------------------------------------------------------------------- #
-if LOGO_PATH.exists():
+if LOGO_PATH:
     st.sidebar.image(str(LOGO_PATH), use_container_width=True)
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
