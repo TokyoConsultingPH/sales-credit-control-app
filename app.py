@@ -197,6 +197,11 @@ def render_billing_notifications() -> None:
                     f"raised {n['created_at']}"
                     f"{' · emailed' if str(n.get('emailed')).lower() in ('true','1') else ''}</span>",
                     unsafe_allow_html=True)
+        for nm in [a.strip() for a in str(n.get("attachments") or "").split(";") if a.strip()]:
+            data = AT.get_attachment_bytes(nm)
+            if data is not None:
+                c1.download_button(f"📄 Notice of Completion — {nm}", data,
+                                   file_name=nm, key=f"noc_{n['notif_id']}_{nm}")
         if c2.button("Mark billed", key=f"bill_{n['notif_id']}"):
             EN.mark_billed(n["notif_id"])
             st.rerun()
@@ -230,17 +235,24 @@ def render_complete_engagement() -> None:
             completed_by = c1.text_input("Your name *")
             completion_date = c2.date_input("Completion date", value=pd.Timestamp.today())
             notes = st.text_area("Completion notes", placeholder="Report submitted, deliverables sent…")
+            noc_files = st.file_uploader(
+                "Notice of Completion sent to client (PDF or JPG)",
+                accept_multiple_files=True, type=["pdf", "jpg", "jpeg", "png"])
             submitted = st.form_submit_button("✅ Submit completion & trigger billing", type="primary")
 
         if submitted:
             if not completed_by.strip():
                 st.error("Your name is required.")
+            elif not noc_files:
+                st.error("Attach the Notice of Completion (PDF or JPG) sent to the client.")
             else:
+                stored = AT.save_attachments(f"NOC-{row.engagement_key}", noc_files)
                 notif = EN.complete_engagement(
                     completed_by=completed_by, engagement_key=row.engagement_key,
                     quotation_number=row.quotation_number, company=row.company,
                     branch=row.branch, total_fee=row.total_fee, final_amount=final_amt,
-                    completion_date=completion_date, notes=notes)
+                    completion_date=completion_date, notes=notes,
+                    attachments="; ".join(stored))
                 sent, mmsg = MAIL.send(
                     cfg, subject=f"[Billing] Final 50% due — {row.company}",
                     body=notif["message"] + f"\n\nCompleted by {completed_by} on {completion_date}.")

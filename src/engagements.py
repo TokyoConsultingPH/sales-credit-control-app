@@ -23,10 +23,11 @@ NOTIF_TABLE = "billing_notifications"
 COMPLETION_FIELDS = [
     "completed_at", "completed_by", "engagement_key", "quotation_number",
     "company", "branch", "total_fee", "final_amount", "completion_date", "notes",
+    "attachments",
 ]
 NOTIF_FIELDS = [
     "notif_id", "created_at", "type", "engagement_key", "quotation_number",
-    "company", "amount", "status", "message", "emailed", "billed_at",
+    "company", "amount", "status", "message", "emailed", "billed_at", "attachments",
 ]
 
 FINAL_SHARE = 0.5
@@ -108,8 +109,10 @@ def pending_engagements() -> pd.DataFrame:
 # Complete an engagement -> raise a billing notification
 # --------------------------------------------------------------------------- #
 def complete_engagement(*, completed_by, engagement_key, quotation_number, company,
-                        branch, total_fee, final_amount, completion_date, notes) -> dict:
+                        branch, total_fee, final_amount, completion_date, notes,
+                        attachments="") -> dict:
     """Record the completion and create a pending final-50% notification.
+    `attachments` is a '; '-joined list of stored Notice-of-Completion filenames.
     Returns the notification dict."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     completion = {
@@ -118,6 +121,7 @@ def complete_engagement(*, completed_by, engagement_key, quotation_number, compa
         "company": company, "branch": branch, "total_fee": float(total_fee or 0),
         "final_amount": float(final_amount or 0),
         "completion_date": str(completion_date or ""), "notes": (notes or "").strip(),
+        "attachments": attachments or "",
     }
     _append(pd.DataFrame([completion], columns=COMPLETION_FIELDS),
             COMPLETIONS_CSV, COMPLETIONS_TABLE)
@@ -129,7 +133,7 @@ def complete_engagement(*, completed_by, engagement_key, quotation_number, compa
         "amount": float(final_amount or 0), "status": "pending",
         "message": f"Final 50% billing due: {company} — {float(final_amount or 0):,.0f} "
                    f"({completion['quotation_number'] or 'no quotation no.'})",
-        "emailed": False, "billed_at": "",
+        "emailed": False, "billed_at": "", "attachments": attachments or "",
     }
     _append(pd.DataFrame([notif], columns=NOTIF_FIELDS), NOTIF_CSV, NOTIF_TABLE)
     return notif
