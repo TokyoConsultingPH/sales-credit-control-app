@@ -43,11 +43,14 @@ def _find_logo():
 LOGO_PATH = _find_logo()
 
 st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
-if LOGO_PATH:
-    st.logo(str(LOGO_PATH), size="large")
 USER = require_login()
 cfg = load_config()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
+
+# Centered logo banner at the top of every page.
+if LOGO_PATH:
+    _lc = st.columns([2, 3, 2])
+    _lc[1].image(str(LOGO_PATH), use_container_width=True)
 
 DIMENSIONS = {"Branch": "branch", "Category": "category",
               "Classification": "classification", "PIC / staff": "pic"}
@@ -588,8 +591,6 @@ def render_client_database() -> None:
 # --------------------------------------------------------------------------- #
 # Sidebar — page selector
 # --------------------------------------------------------------------------- #
-if LOGO_PATH:
-    st.sidebar.image(str(LOGO_PATH), use_container_width=True)
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 

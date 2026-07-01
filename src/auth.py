@@ -27,7 +27,8 @@ def _find_logo():
 def _logo() -> None:
     p = _find_logo()
     if p:
-        st.image(str(p), width=320)
+        c = st.columns([1, 2, 1])
+        c[1].image(str(p), use_container_width=True)
 
 
 def _master_password() -> str | None:
