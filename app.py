@@ -444,8 +444,9 @@ def render_sales_database() -> None:
     out = out.rename(columns={"company": "Company", "content": "Engagement",
                               "branch": "Branch", "classification": "Classification",
                               "category": "Category", "pic": "PIC"})
+    out["Total"] = out[months].sum(axis=1)
     ordered = (["Company", "Engagement", "Branch", "Classification", "Category", "PIC",
-                "Status", "TOTAL SERVICE FEE"] + months)
+                "Status", "TOTAL SERVICE FEE"] + months + ["Total"])
     out = out[[c for c in ordered if c in out.columns]]
 
     f1, f2, f3 = st.columns([1, 1, 2])
@@ -469,6 +470,7 @@ def render_sales_database() -> None:
 
     numfmt = {mm: "{:,.0f}" for mm in months}
     numfmt["TOTAL SERVICE FEE"] = "{:,.0f}"
+    numfmt["Total"] = "{:,.0f}"
     st.dataframe(fv.style.format(numfmt), use_container_width=True, hide_index=True)
 
     import io as _io
