@@ -698,6 +698,16 @@ with t4:
         disp = due.drop(columns=["Key"]).copy()
         disp["Status"] = [overrides.get(k, BS.flow_status(s))
                           for k, s in zip(keys, disp["Status"])]
+
+        hide_collected = st.checkbox("Hide collected", value=True)
+        if hide_collected:
+            mask = (disp["Status"] != "Collected").tolist()
+            disp = disp[mask].reset_index(drop=True)
+            keys = [k for k, keep in zip(keys, mask) if keep]
+            n_hidden = mask.count(False)
+            if n_hidden:
+                st.caption(f"{n_hidden} collected engagement(s) hidden.")
+
         edited = st.data_editor(
             disp, use_container_width=True, hide_index=True, key="due_status_editor",
             disabled=[c for c in disp.columns if c != "Status"],
