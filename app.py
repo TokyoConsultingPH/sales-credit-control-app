@@ -167,7 +167,8 @@ def render_quotation_form() -> None:
         lines = st.data_editor(
             line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
             column_config={
-                "Service": st.column_config.SelectboxColumn("Service", options=Q.SERVICE_TYPES, width="medium"),
+                "Service": st.column_config.TextColumn("Service", width="medium",
+                                                       help="Type the service name"),
                 "Department": st.column_config.SelectboxColumn("Department", options=Q.DEPARTMENTS),
                 "PIC": st.column_config.TextColumn("PIC", help="Person in charge of this service"),
                 "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
