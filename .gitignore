@@ -27,4 +27,5 @@ data/sales_overrides.csv
 Thumbs.db
 .DS_Store
 
-# NOTE: the client workbook in "Sample file/" IS committed (private repo only).
+# Client workbook stays LOCAL ONLY (repo is public — never commit client data).
+Sample file/
