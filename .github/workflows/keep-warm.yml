@@ -1,0 +1,31 @@
+name: keep-warm
+
+# Nudge the deployed app during business hours so it's already awake for the team,
+# reducing the free-tier "first visit takes ~30s" delay.
+#
+# Setup (one time): in this repo → Settings → Secrets and variables → Actions →
+#   Variables tab → New variable:  name APP_URL,  value = your https://<app>.streamlit.app URL
+# If APP_URL is not set, the job simply does nothing.
+#
+# Schedule is UTC. 00:00–10:00 UTC = 08:00–18:00 Manila, Mon–Fri.
+on:
+  schedule:
+    - cron: "*/15 0-10 * * 1-5"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the app
+        run: |
+          if [ -z "${APP_URL}" ]; then
+            echo "APP_URL variable not set — skipping."; exit 0
+          fi
+          echo "Pinging ${APP_URL}"
+          curl -sSL -m 40 -o /dev/null -w "HTTP %{http_code}\n" "${APP_URL}" || true
+          # a second hit after a moment helps wake the container
+          sleep 20
+          curl -sSL -m 40 -o /dev/null -w "HTTP %{http_code}\n" "${APP_URL}" || true
+        env:
+          APP_URL: ${{ vars.APP_URL }}

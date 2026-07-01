@@ -63,6 +63,41 @@ if LOGO_PATH:
     _lc = st.columns([2, 1, 2])
     _lc[1].image(str(LOGO_PATH), width=200)
 
+def _bust_caches() -> None:
+    """Clear cached reads after a write so data refreshes immediately."""
+    st.cache_data.clear()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def cx_pending_notifs():
+    return EN.load_notifications(status="pending")
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def cx_quotations():
+    return Q.load_quotations()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def cx_pending_engagements():
+    return EN.pending_engagements()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def cx_client_db():
+    return REG.client_database()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def cx_user_activity():
+    return REG.user_activity()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def cx_users():
+    return REG.list_users_display()
+
+
 DIMENSIONS = {"Branch": "branch", "Category": "category",
               "Classification": "classification", "PIC / staff": "pic"}
 
@@ -248,6 +283,7 @@ def render_quotation_form() -> None:
                 for i, r in enumerate(valid_lines)
             ]
             where = Q.save_quotations(records)
+            _bust_caches()
             # Auto-flag the initial 50% of each engagement as due for billing.
             flagged = 0
             for rec in records:
@@ -269,7 +305,7 @@ def render_quotation_form() -> None:
 
     st.divider()
     st.subheader("Recent ordered quotations")
-    qdf = Q.load_quotations()
+    qdf = cx_quotations()
     if qdf.empty:
         st.info("No quotations submitted yet.")
     else:
@@ -293,7 +329,7 @@ def render_quotation_form() -> None:
 
 def render_billing_notifications() -> None:
     """Pending final-50% billing notifications with a 'mark as billed' action."""
-    pending = EN.load_notifications(status="pending")
+    pending = cx_pending_notifs()
     st.subheader(f"🔔 Pending billings — initial & final 50% ({len(pending)})")
     if pending.empty:
         st.success("No pending billings. ✅")
@@ -312,6 +348,7 @@ def render_billing_notifications() -> None:
                                    file_name=nm, key=f"noc_{n['notif_id']}_{nm}")
         if c2.button("Mark billed", key=f"bill_{n['notif_id']}"):
             EN.mark_billed(n["notif_id"])
+            _bust_caches()
             st.rerun()
 
 
@@ -322,7 +359,7 @@ def render_complete_engagement() -> None:
     st.caption(f"Completing an engagement raises a final-50% billing notification. "
                f"Email: {'on' if email_ok else 'off'} — {email_msg}")
 
-    pend = EN.pending_engagements()
+    pend = cx_pending_engagements()
     if pend.empty:
         st.info("No engagements awaiting completion. Add a quotation on the "
                 "**📝 Report Ordered Quotation** page first.")
@@ -382,6 +419,7 @@ def render_complete_engagement() -> None:
                 st.success(f"Engagement completed. Billing notification raised for "
                            f"**{row.company}** ({final_amt:,.0f}).")
                 st.caption(("📧 " + mmsg) if sent else ("📧 not emailed — " + mmsg))
+                _bust_caches()
                 st.rerun()
 
     st.divider()
@@ -403,9 +441,10 @@ def render_manage_users() -> None:
             ok, msg = REG.add_user(new_username, new_name, new_role, new_pw)
             (st.success if ok else st.error)(msg)
             if ok:
+                _bust_caches()
                 st.rerun()
 
-    users = REG.list_users_display()
+    users = cx_users()
     if users.empty:
         st.caption("No users yet.")
     else:
@@ -415,6 +454,7 @@ def render_manage_users() -> None:
             rm = st.selectbox("Remove a user", ["—"] + users["username"].astype(str).tolist())
             if rm != "—" and st.button(f"Remove {rm}"):
                 REG.remove_user(rm)
+                _bust_caches()
                 st.rerun()
         with col2:
             ru = st.selectbox("Reset password for", ["—"] + users["username"].astype(str).tolist())
@@ -425,7 +465,7 @@ def render_manage_users() -> None:
 
     st.divider()
     st.subheader("Activity — who reported which engagements")
-    act = REG.user_activity()
+    act = cx_user_activity()
     if act.empty:
         st.info("No reported engagements yet.")
         return
@@ -587,7 +627,7 @@ def render_sales_database() -> None:
 def render_client_database() -> None:
     st.title("🗂️ Client database")
     st.caption("Built automatically from reported (signed) quotations.")
-    cdb = REG.client_database()
+    cdb = cx_client_db()
     if cdb.empty:
         st.info("No clients yet. Report an ordered quotation to populate this.")
         return
@@ -639,7 +679,7 @@ if st.sidebar.button("Log out", use_container_width=True):
     logout()
     st.rerun()
 
-_pending_badge = EN.pending_count()
+_pending_badge = len(cx_pending_notifs())
 _complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
 _pages = ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label,
           "🧾 Sales Database", "🗂️ Client Database"]
@@ -833,7 +873,7 @@ st.title("Sales Reporting & Credit Control")
 st.caption(f"Source: **{source_label}**  ·  grouped by **{dim_label}**  ·  "
            f"as of **{as_of.date()}**  ·  {len(df):,} billing rows")
 
-_pending = EN.pending_count()
+_pending = len(cx_pending_notifs())
 if _pending:
     st.warning(f"🔔 {_pending} billing item(s) pending (initial / final 50%) — "
                "see the **Due for Billing** tab or **✅ Complete Engagement** page.")
@@ -864,7 +904,7 @@ total_ar = df["outstanding"].sum()
 # Due for billing = pending billing notifications (reported quotations + completed
 # engagements) whose due month is the current (as-of) month.
 _cur_month = as_of.strftime("%Y-%m")
-_bill = EN.load_notifications(status="pending")
+_bill = cx_pending_notifs()
 if not _bill.empty:
     _bill = _bill.copy()
     _bill["DueMonth"] = _bill["due_month"].map(EN.normalize_month)
@@ -1139,7 +1179,7 @@ with t4:
     st.markdown("#### 🔔 Due for billing — reported quotations (initial 50%) & "
                 "completed engagements (final 50%)")
     only_cur = st.checkbox(f"Current month only ({_cur_month})", value=True)
-    fin = EN.load_notifications(status="pending")
+    fin = cx_pending_notifs()
     if fin.empty:
         st.info("Nothing due. Submit a quotation (flags the initial 50%) or complete an "
                 "engagement (flags the final 50%).")
