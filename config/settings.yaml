@@ -99,7 +99,20 @@ database:
     status: "status"
 
 # ---------------------------------------------------------------------
-# 5. GENERAL
+# 5. EMAIL (for final-50% billing notifications) — optional
+# Password comes from env var TCF_SMTP_PASSWORD (never store it here).
+# Example for Gmail: smtp_host smtp.gmail.com, port 587, use an App Password.
+# ---------------------------------------------------------------------
+email:
+  enabled: false
+  smtp_host: ""
+  smtp_port: 587
+  smtp_user: ""          # defaults to from_addr if blank
+  from_addr: ""
+  to_addrs: []           # billing / management recipients, e.g. ["billing@tcf.com"]
+
+# ---------------------------------------------------------------------
+# 6. GENERAL
 # ---------------------------------------------------------------------
 general:
   currency_symbol: "PHP "

@@ -20,6 +20,8 @@ from src import monitoring as M
 from src import reports as R
 from src import quotations as Q
 from src import attachments as AT
+from src import engagements as EN
+from src import notify_email as MAIL
 from src.auth import require_password
 
 ROOT = Path(__file__).resolve().parent
@@ -181,16 +183,93 @@ def render_quotation_form() -> None:
                         st.caption(f"⚠️ {nm} (file not found)")
 
 
+def render_billing_notifications() -> None:
+    """Pending final-50% billing notifications with a 'mark as billed' action."""
+    pending = EN.load_notifications(status="pending")
+    st.subheader(f"🔔 Pending final-50% billings ({len(pending)})")
+    if pending.empty:
+        st.success("No pending billings. ✅")
+        return
+    for _, n in pending.iterrows():
+        c1, c2 = st.columns([5, 1])
+        c1.markdown(f"🔴 **{n['company']}** — {float(n['amount']):,.0f}  \n"
+                    f"<span style='color:gray'>{n['quotation_number'] or 'no quotation no.'} · "
+                    f"raised {n['created_at']}"
+                    f"{' · emailed' if str(n.get('emailed')).lower() in ('true','1') else ''}</span>",
+                    unsafe_allow_html=True)
+        if c2.button("Mark billed", key=f"bill_{n['notif_id']}"):
+            EN.mark_billed(n["notif_id"])
+            st.rerun()
+
+
+def render_complete_engagement() -> None:
+    """Employee marks a logged quotation complete -> triggers final-50% billing."""
+    st.title("✅ Complete an engagement")
+    email_ok, email_msg = MAIL.status(cfg)
+    st.caption(f"Completing an engagement raises a final-50% billing notification. "
+               f"Email: {'on' if email_ok else 'off'} — {email_msg}")
+
+    pend = EN.pending_engagements()
+    if pend.empty:
+        st.info("No logged quotations awaiting completion. Add one on the "
+                "**📝 Report Ordered Quotation** page first.")
+    else:
+        labels = {
+            f"{r.engagement_key}  ·  {r.company}  ·  total {r.total_fee:,.0f}": r
+            for r in pend.itertuples()
+        }
+        with st.form("complete_engagement", clear_on_submit=True):
+            choice = st.selectbox("Engagement to complete", list(labels))
+            row = labels[choice]
+            final_amt = round(float(row.total_fee) * EN.FINAL_SHARE, 2)
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total fee", f"{row.total_fee:,.0f}")
+            m2.metric("Final 50% to bill", f"{final_amt:,.0f}")
+            m3.metric("Service lines", int(row.lines))
+            c1, c2 = st.columns(2)
+            completed_by = c1.text_input("Your name *")
+            completion_date = c2.date_input("Completion date", value=pd.Timestamp.today())
+            notes = st.text_area("Completion notes", placeholder="Report submitted, deliverables sent…")
+            submitted = st.form_submit_button("✅ Submit completion & trigger billing", type="primary")
+
+        if submitted:
+            if not completed_by.strip():
+                st.error("Your name is required.")
+            else:
+                notif = EN.complete_engagement(
+                    completed_by=completed_by, engagement_key=row.engagement_key,
+                    quotation_number=row.quotation_number, company=row.company,
+                    branch=row.branch, total_fee=row.total_fee, final_amount=final_amt,
+                    completion_date=completion_date, notes=notes)
+                sent, mmsg = MAIL.send(
+                    cfg, subject=f"[Billing] Final 50% due — {row.company}",
+                    body=notif["message"] + f"\n\nCompleted by {completed_by} on {completion_date}.")
+                if sent:
+                    EN.mark_emailed(notif["notif_id"])
+                st.success(f"Engagement completed. Billing notification raised for "
+                           f"**{row.company}** ({final_amt:,.0f}).")
+                st.caption(("📧 " + mmsg) if sent else ("📧 not emailed — " + mmsg))
+                st.rerun()
+
+    st.divider()
+    render_billing_notifications()
+
+
 # --------------------------------------------------------------------------- #
 # Sidebar — page selector
 # --------------------------------------------------------------------------- #
 st.sidebar.title("📊 Sales & Credit Control")
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 
-page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation"])
+_pending_badge = EN.pending_count()
+_complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
+page = st.sidebar.radio("Page", ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label])
 st.sidebar.divider()
 if page == "📝 Report Ordered Quotation":
     render_quotation_form()
+    st.stop()
+if page.startswith("✅ Complete Engagement"):
+    render_complete_engagement()
     st.stop()
 
 # --------------------------------------------------------------------------- #
@@ -343,6 +422,11 @@ for w in DL.validate(df):
 st.title("Sales Reporting & Credit Control")
 st.caption(f"Source: **{source_label}**  ·  grouped by **{dim_label}**  ·  "
            f"as of **{as_of.date()}**  ·  {len(df):,} billing rows")
+
+_pending = EN.pending_count()
+if _pending:
+    st.warning(f"🔔 {_pending} engagement(s) completed and awaiting **final 50% billing** — "
+               "see the **✅ Complete Engagement** page.")
 
 summary = M.department_summary(df, cfg)
 total_inv = df["invoiced"].sum()
