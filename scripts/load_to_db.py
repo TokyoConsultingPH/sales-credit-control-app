@@ -16,26 +16,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import pandas as pd                            # noqa: E402
 from src import workbook_loader as W          # noqa: E402
 from src.db_loader import _normalize_url      # noqa: E402
 
 TABLE = "billing_lines"
-
-# tidy column -> SQL column (matches settings.yaml database.db_columns).
-RENAME = {
-    "date": "invoice_date",
-    "branch": "branch",
-    "category": "service_category",
-    "pic": "staff",
-    "classification": "classification",
-    "company": "client_name",
-    "content": "engagement_name",
-    "invoiced_amt": "invoiced_amount",
-    "collected_amt": "collected_amount",
-    "due_billing_amt": "due_billing_amount",
-    "month_status": "status",
-    "year": "year",
-}
 
 
 def main() -> int:
@@ -56,9 +41,11 @@ def main() -> int:
 
     print(f"Parsing {path} …")
     tidy = W.load_workbook(path)
-    out = tidy.rename(columns=RENAME)[list(RENAME.values())]
-    out["due_date"] = out["invoice_date"]          # billing month doubles as due date
-    out["next_billing_date"] = None
+    # Store the FULL tidy schema so both the dashboard DB source and the Sales
+    # Database page can rebuild everything from the database.
+    out = tidy.copy()
+    out["due_date"] = out["date"]
+    out["next_billing_date"] = pd.NaT
 
     eng = create_engine(_normalize_url(url))
     print(f"Writing {len(out):,} rows to table '{TABLE}' …")

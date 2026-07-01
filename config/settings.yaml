@@ -72,31 +72,27 @@ database:
   # The query must return columns that map (via db_columns below) to the
   # canonical fields. Use SQL aliases or the mapping — whichever is easier.
   # Leave 'query' blank to browse the schema first and build it in the app.
-  # Default works once you run scripts/load_to_db.py (creates 'billing_lines').
-  # Replace with your own tables/columns when reading your real ERP schema.
+  # Default works once you run scripts/load_to_db.py (creates 'billing_lines'
+  # with the full tidy schema). Replace when reading your real ERP schema.
   query: |
-    SELECT invoice_date, branch, service_category, staff, classification,
-           client_name, engagement_name,
-           invoiced_amount, collected_amount, due_date,
-           next_billing_date, status
-    FROM billing_lines;
+    SELECT * FROM billing_lines;
 
   # Map canonical field (left) -> column name returned by your query (right).
   # Omit any you don't have. branch / category / pic / classification are the
   # selectable "department" dimensions.
   db_columns:
-    date: "invoice_date"
+    date: "date"
     branch: "branch"
-    category: "service_category"
-    pic: "staff"
+    category: "category"
+    pic: "pic"
     classification: "classification"
-    client: "client_name"
-    engagement: "engagement_name"
-    invoiced: "invoiced_amount"
-    received: "collected_amount"
+    client: "company"
+    engagement: "content"
+    invoiced: "invoiced_amt"
+    received: "collected_amt"
     due_date: "due_date"
     next_billing_date: "next_billing_date"
-    status: "status"
+    status: "month_status"
 
 # ---------------------------------------------------------------------
 # 4b. TAXONOMY — standard Branch values and how service categories map to a

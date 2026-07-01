@@ -437,16 +437,31 @@ def render_manage_users() -> None:
     st.dataframe(eng.style.format({"price": "{:,.0f}"}), use_container_width=True, hide_index=True)
 
 
+@st.cache_data(show_spinner="Loading from database…", ttl=300)
+def _billing_lines_from_db() -> pd.DataFrame:
+    return pd.read_sql("SELECT * FROM billing_lines", DB.make_engine({}, None, None))
+
+
 def render_sales_database() -> None:
     st.title("🧾 Sales database")
     tcf = find_tcf_workbook()
-    if not tcf:
-        st.info("No TCF workbook found in 'Sample file' or 'data'.")
+    if tcf:
+        tidy = load_tcf(str(tcf))
+        source_note = tcf.name
+    elif os.getenv("DATABASE_URL"):
+        try:
+            tidy = _billing_lines_from_db()
+            source_note = "database (billing_lines)"
+        except Exception as e:
+            st.error(f"Could not read from database: {e}")
+            return
+    else:
+        st.info("No data source: add a workbook to 'Sample file/' or set DATABASE_URL.")
         return
-    tidy = load_tcf(str(tcf))
     if tidy.empty:
         st.info("No sales rows found.")
         return
+    st.caption(f"Source: {source_note}")
 
     years = sorted(int(y) for y in tidy["year"].dropna().unique())
     default_idx = years.index(2026) if 2026 in years else len(years) - 1
