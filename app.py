@@ -751,10 +751,43 @@ with t1:
     st.dataframe(summary.style.format(fmt, na_rep="—"), use_container_width=True)
 
 with t2:
+    st.markdown("**Year-over-year by month** — each line is a year, Jan–Dec")
+    _yb = (df_full[df_full["department"].isin(chosen)] if chosen else df_full)
+    _yb = _yb.dropna(subset=["date"]).copy() if _yb is not None else pd.DataFrame()
+    if _yb.empty:
+        st.info("No dated rows to compare across years.")
+    else:
+        _months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        _yb["Year"] = _yb["date"].dt.year.astype(str)
+        _yb["MonthNum"] = _yb["date"].dt.month
+        yoy = _yb.groupby(["Year", "MonthNum"])["invoiced"].sum().reset_index()
+        yoy["Month"] = yoy["MonthNum"].map(lambda m: _months[m - 1])
+        figyoy = px.line(yoy.sort_values("MonthNum"), x="Month", y="invoiced",
+                         color="Year", markers=True, title="Monthly billings by year")
+        figyoy.update_xaxes(categoryorder="array", categoryarray=_months)
+        figyoy.update_layout(yaxis_title="Billed", legend_title="Year")
+        st.plotly_chart(figyoy, use_container_width=True)
+
+        # Latest-month YoY summary (this year's latest month vs same month last year).
+        latest = yoy["MonthNum"].max()
+        cur_y = as_of.year
+        cur_v = yoy[(yoy["Year"] == str(cur_y)) & (yoy["MonthNum"] == latest)]["invoiced"].sum()
+        prev_v = yoy[(yoy["Year"] == str(cur_y - 1)) & (yoy["MonthNum"] == latest)]["invoiced"].sum()
+        cyt = yoy[yoy["Year"] == str(cur_y)]["invoiced"].sum()
+        pyt = yoy[yoy["Year"] == str(cur_y - 1)]["invoiced"].sum()
+        mc = st.columns(2)
+        mc[0].metric(f"{_months[latest - 1]} {cur_y} vs {cur_y - 1}", money(cur_v),
+                     f"{(cur_v - prev_v) / prev_v * 100:+.0f}%" if prev_v else "—")
+        mc[1].metric(f"{cur_y} vs {cur_y - 1} (full-year to date)", money(cyt),
+                     f"{(cyt - pyt) / pyt * 100:+.0f}%" if pyt else "—")
+
+    st.divider()
     trend = M.monthly_trend(df)
     if trend.empty:
         st.info("No dated rows to plot trends.")
     else:
+        st.markdown(f"**Monthly billings by {dim_label}** (selected years)")
         st.plotly_chart(
             px.line(trend, x="Month", y="Invoiced", color="Department", markers=True,
                     title=f"Monthly billings by {dim_label}"),
@@ -763,7 +796,6 @@ with t2:
             M.trend_metrics(df).style.format(
                 {"Invoiced": "{:,.0f}", "MoM %": "{:.1f}", "YoY %": "{:.1f}"}, na_rep="—"),
             use_container_width=True)
-        st.caption("Tip: select multiple years in the sidebar for year-over-year trends.")
 
 with t3:
     aging = M.ar_aging(df, cfg, as_of)
