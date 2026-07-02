@@ -39,10 +39,11 @@ def set_override(key: str, field: str, value, user: str = "") -> None:
     row = pd.DataFrame([{"key": key, "field": field, "value": value,
                          "updated_by": user, "updated_at": now}], columns=FIELDS)
     if EN._use_db():
-        from sqlalchemy import text
-        with EN._engine().begin() as conn:
-            conn.execute(text(f'DELETE FROM {TABLE} WHERE "key"=:k AND field=:f'),
-                         {"k": key, "f": field})
+        if EN._table_exists(TABLE):
+            from sqlalchemy import text
+            with EN._engine().begin() as conn:
+                conn.execute(text(f'DELETE FROM {TABLE} WHERE "key"=:k AND field=:f'),
+                             {"k": key, "f": field})
         EN._append(row, CSV_PATH, TABLE)
         return
     df = EN._read(CSV_PATH, TABLE, FIELDS)

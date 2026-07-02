@@ -88,10 +88,11 @@ def set_status(request_id: str, status: str, user: str = "") -> None:
     row = pd.DataFrame([{"request_id": request_id, "status": status,
                          "updated_by": user, "updated_at": now}], columns=STATUS_FIELDS)
     if EN._use_db():
-        from sqlalchemy import text
-        with EN._engine().begin() as conn:
-            conn.execute(text(f'DELETE FROM {STATUS_TABLE} WHERE request_id = :r'),
-                         {"r": request_id})
+        if EN._table_exists(STATUS_TABLE):
+            from sqlalchemy import text
+            with EN._engine().begin() as conn:
+                conn.execute(text(f'DELETE FROM {STATUS_TABLE} WHERE request_id = :r'),
+                             {"r": request_id})
         EN._append(row, STATUS_CSV, STATUS_TABLE)
         return
     df = EN._read(STATUS_CSV, STATUS_TABLE, STATUS_FIELDS)

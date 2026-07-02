@@ -67,6 +67,13 @@ def normalize_month(s) -> str:
 # --------------------------------------------------------------------------- #
 # Generic append / read (CSV or DB)
 # --------------------------------------------------------------------------- #
+def _table_exists(table: str) -> bool:
+    """True if `table` exists in the DB. Only meaningful when _use_db() is True."""
+    from sqlalchemy import text
+    with _engine().connect() as conn:
+        return bool(conn.execute(text(f"SELECT to_regclass('public.{table}')")).scalar())
+
+
 def _append(df: pd.DataFrame, csv_path: Path, table: str) -> None:
     if _use_db():
         df.to_sql(table, _engine(), if_exists="append", index=False)

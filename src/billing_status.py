@@ -46,9 +46,10 @@ def set_status(key: str, status: str, user: str = "") -> None:
     row = pd.DataFrame([{"key": key, "status": status, "updated_by": user,
                          "updated_at": now}], columns=FIELDS)
     if EN._use_db():
-        from sqlalchemy import text
-        with EN._engine().begin() as conn:
-            conn.execute(text(f'DELETE FROM {TABLE} WHERE "key" = :k'), {"k": key})
+        if EN._table_exists(TABLE):
+            from sqlalchemy import text
+            with EN._engine().begin() as conn:
+                conn.execute(text(f'DELETE FROM {TABLE} WHERE "key" = :k'), {"k": key})
         EN._append(row, CSV_PATH, TABLE)
         return
     df = EN._read(CSV_PATH, TABLE, FIELDS)
