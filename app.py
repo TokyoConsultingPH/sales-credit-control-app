@@ -357,7 +357,12 @@ def render_quotation_requests() -> None:
         with c3:
             designation = st.text_input("Designation")
             contact_email = st.text_input("Contact / Email")
-        company_address = st.text_input("Company / Address")
+        c4, c5 = st.columns(2)
+        with c4:
+            company_address = st.text_input("Company / Address")
+        with c5:
+            quotation_number = st.text_input(
+                "Quotation Number", placeholder="Leave blank if not yet assigned")
 
         st.markdown("##### Services to be quoted")
         st.caption("List each service on its own row. Use the **+** at the bottom for more lines.")
@@ -373,6 +378,12 @@ def render_quotation_requests() -> None:
                 "Unit Price": st.column_config.NumberColumn(
                     "Unit Price", min_value=0.0, format="%.0f"),
             })
+
+        st.markdown("##### Attachments")
+        qr_files = st.file_uploader(
+            "Attach supporting documents (e.g. client request, reference quotation)",
+            accept_multiple_files=True,
+            type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
 
         submitted = st.form_submit_button("📩 Submit quotation request", type="primary")
 
@@ -392,15 +403,20 @@ def render_quotation_requests() -> None:
             for e in errors:
                 st.error(e)
         else:
+            request_id = QR.new_request_id()
+            stored = AT.save_attachments(request_id, qr_files)
             rid = QR.save_request(
+                request_id=request_id,
                 requested_by=requested_by, requestee_name=requestee_name,
                 company_name=company_name, addressee=addressee, designation=designation,
                 company_address=company_address, contact_email=contact_email,
-                services=services)
+                services=services, quotation_number=quotation_number,
+                attachments="; ".join(stored))
             _bust_caches()
             total = sum(s["unit_price"] for s in services)
+            extra = f", {len(stored)} file(s) attached" if stored else ""
             st.success(f"Quotation request **{rid}** submitted for **{company_name}** "
-                       f"({len(services)} service(s), total {total:,.0f}).")
+                       f"({len(services)} service(s), total {total:,.0f}{extra}).")
 
     st.divider()
     st.subheader("Quotation requests")
@@ -408,20 +424,24 @@ def render_quotation_requests() -> None:
     if reqs.empty:
         st.info("No quotation requests yet.")
         return
-    st.caption(f"{len(reqs)} request(s). Edit **Status** to track progress — changes are saved.")
+    st.caption(f"{len(reqs)} request(s). Edit **Quotation Number** or **Status** to "
+               "track progress — changes are saved.")
 
     display_cols = {
         "request_id": "Request ID", "submitted_at": "Submitted", "requested_by": "Requested By",
         "requestee_name": "Requestee", "company_name": "Company", "addressee": "Addressee",
         "designation": "Designation", "contact_email": "Contact/Email",
-        "services": "Services", "total_price": "Total Price", "status": "Status",
+        "services": "Services", "total_price": "Total Price",
+        "quotation_number": "Quotation Number", "status": "Status",
     }
+    editable = {"Quotation Number", "Status"}
     disp = reqs.rename(columns=display_cols)[list(display_cols.values())]
     edited = st.data_editor(
         disp, use_container_width=True, hide_index=True, key="qr_status_editor",
-        disabled=[c for c in disp.columns if c != "Status"],
+        disabled=[c for c in disp.columns if c not in editable],
         column_config={
             "Total Price": st.column_config.NumberColumn("Total Price", format="%.0f"),
+            "Quotation Number": st.column_config.TextColumn("Quotation Number"),
             "Status": st.column_config.SelectboxColumn(
                 "Status", options=QR.STATUS_OPTIONS, required=True),
         })
@@ -429,12 +449,27 @@ def render_quotation_requests() -> None:
     changed = 0
     for i in range(len(disp)):
         rid = reqs.iloc[i]["request_id"]
+        if str(disp.at[i, "Quotation Number"]) != str(edited.at[i, "Quotation Number"]):
+            QR.set_quotation_number(rid, edited.at[i, "Quotation Number"],
+                                    current_user().get("name", ""))
+            changed += 1
         if str(disp.at[i, "Status"]) != str(edited.at[i, "Status"]):
             QR.set_status(rid, edited.at[i, "Status"], current_user().get("name", ""))
             changed += 1
     if changed:
         _bust_caches()
-        st.success(f"Saved {changed} status change(s).")
+        st.success(f"Saved {changed} change(s).")
+
+    names = sorted({n.strip() for cell in reqs.get("attachments", pd.Series(dtype=str)).dropna()
+                    for n in str(cell).split(";") if n.strip()})
+    if names:
+        with st.expander(f"📎 Attachments ({len(names)})"):
+            for nm in names:
+                data = AT.get_attachment_bytes(nm)
+                if data is not None:
+                    st.download_button(f"⬇️ {nm}", data, file_name=nm, key=f"qratt_{nm}")
+                else:
+                    st.caption(f"⚠️ {nm} (file not found)")
 
     st.download_button("⬇️ Download requests (CSV)", disp.to_csv(index=False).encode("utf-8-sig"),
                        file_name="quotation_requests.csv", mime="text/csv")
