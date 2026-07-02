@@ -361,17 +361,26 @@ def render_quotation_requests() -> None:
 
         st.markdown("##### Services to be quoted")
         st.caption("List each service on its own row. Use the **+** at the bottom for more lines.")
-        svc_template = pd.DataFrame([{"Service": ""}])
+        svc_template = pd.DataFrame([
+            {"Service": "", "Unit": "PHP/Year", "Unit Price": 0.0}
+        ])
         svc_lines = st.data_editor(
             svc_template, num_rows="dynamic", use_container_width=True, hide_index=True,
-            column_config={"Service": st.column_config.TextColumn(
-                "Service", width="large", help="Type the service to be quoted")})
+            column_config={
+                "Service": st.column_config.TextColumn(
+                    "Service", width="large", help="Type the service to be quoted"),
+                "Unit": st.column_config.SelectboxColumn("Unit", options=QR.UNITS),
+                "Unit Price": st.column_config.NumberColumn(
+                    "Unit Price", min_value=0.0, format="%.0f"),
+            })
 
         submitted = st.form_submit_button("📩 Submit quotation request", type="primary")
 
     if submitted:
-        services = [str(r["Service"]).strip() for _, r in svc_lines.iterrows()
-                   if str(r.get("Service") or "").strip()]
+        services = [
+            {"service": r["Service"], "unit": r["Unit"], "unit_price": r["Unit Price"]}
+            for _, r in svc_lines.iterrows() if str(r.get("Service") or "").strip()
+        ]
         errors = []
         if not requested_by.strip():
             errors.append("Requested by is required.")
@@ -389,8 +398,9 @@ def render_quotation_requests() -> None:
                 company_address=company_address, contact_email=contact_email,
                 services=services)
             _bust_caches()
+            total = sum(s["unit_price"] for s in services)
             st.success(f"Quotation request **{rid}** submitted for **{company_name}** "
-                       f"({len(services)} service(s)).")
+                       f"({len(services)} service(s), total {total:,.0f}).")
 
     st.divider()
     st.subheader("Quotation requests")
@@ -404,14 +414,17 @@ def render_quotation_requests() -> None:
         "request_id": "Request ID", "submitted_at": "Submitted", "requested_by": "Requested By",
         "requestee_name": "Requestee", "company_name": "Company", "addressee": "Addressee",
         "designation": "Designation", "contact_email": "Contact/Email",
-        "services": "Services", "status": "Status",
+        "services": "Services", "total_price": "Total Price", "status": "Status",
     }
     disp = reqs.rename(columns=display_cols)[list(display_cols.values())]
     edited = st.data_editor(
         disp, use_container_width=True, hide_index=True, key="qr_status_editor",
         disabled=[c for c in disp.columns if c != "Status"],
-        column_config={"Status": st.column_config.SelectboxColumn(
-            "Status", options=QR.STATUS_OPTIONS, required=True)})
+        column_config={
+            "Total Price": st.column_config.NumberColumn("Total Price", format="%.0f"),
+            "Status": st.column_config.SelectboxColumn(
+                "Status", options=QR.STATUS_OPTIONS, required=True),
+        })
 
     changed = 0
     for i in range(len(disp)):
