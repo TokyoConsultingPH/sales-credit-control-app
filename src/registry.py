@@ -22,8 +22,8 @@ from src import security
 ROOT = Path(__file__).resolve().parent.parent
 USERS_CSV = ROOT / "data" / "users.csv"
 USERS_TABLE = "app_users"
-USER_FIELDS = ["username", "name", "role", "salt", "pw_hash", "added_at"]
-DISPLAY_FIELDS = ["username", "name", "role", "added_at"]
+USER_FIELDS = ["username", "name", "role", "email", "salt", "pw_hash", "added_at"]
+DISPLAY_FIELDS = ["username", "name", "role", "email", "added_at"]
 ROLES = ["Staff", "Manager", "Admin"]
 
 
@@ -34,6 +34,26 @@ def _use_db() -> bool:
 def _engine():
     from src.db_loader import make_engine
     return make_engine({}, None, None)
+
+
+def _ensure_email_column() -> None:
+    """Add the 'email' column to an existing users table/file that predates it.
+
+    Safe/idempotent: no-op if the column is already there or nothing exists yet.
+    """
+    if _use_db():
+        if EN._table_exists(USERS_TABLE):
+            from sqlalchemy import text
+            with _engine().begin() as conn:
+                conn.execute(text(f"ALTER TABLE {USERS_TABLE} ADD COLUMN IF NOT EXISTS email TEXT"))
+        return
+    if USERS_CSV.exists():
+        df = pd.read_csv(USERS_CSV, encoding="utf-8-sig")
+        if "email" not in df.columns:
+            df["email"] = ""
+            cols = [c for c in USER_FIELDS if c in df.columns] + \
+                   [c for c in df.columns if c not in USER_FIELDS]
+            df[cols].to_csv(USERS_CSV, index=False, encoding="utf-8-sig")
 
 
 def _first_nonempty(series: pd.Series) -> str:
@@ -51,6 +71,7 @@ def list_users() -> pd.DataFrame:
 
 
 def list_users_display() -> pd.DataFrame:
+    _ensure_email_column()
     df = list_users()
     return df[[c for c in DISPLAY_FIELDS if c in df.columns]] if not df.empty else \
         pd.DataFrame(columns=DISPLAY_FIELDS)
@@ -64,7 +85,23 @@ def get_user(username: str) -> dict | None:
     return m.iloc[0].to_dict() if not m.empty else None
 
 
-def add_user(username: str, name: str, role: str, password: str) -> tuple[bool, str]:
+def get_user_by_email(email: str) -> dict | None:
+    _ensure_email_column()
+    df = list_users()
+    email = (email or "").strip().lower()
+    if df.empty or not email or "email" not in df.columns:
+        return None
+    m = df[df["email"].astype(str).str.lower() == email]
+    return m.iloc[0].to_dict() if not m.empty else None
+
+
+def email_taken(email: str) -> bool:
+    return get_user_by_email(email) is not None
+
+
+def add_user(username: str, name: str, role: str, password: str,
+            email: str = "") -> tuple[bool, str]:
+    _ensure_email_column()
     username = (username or "").strip()
     if not username or not password:
         return False, "Username and password are required."
@@ -73,7 +110,7 @@ def add_user(username: str, name: str, role: str, password: str) -> tuple[bool, 
     salt, pw_hash = security.hash_password(password)
     row = pd.DataFrame([{
         "username": username, "name": (name or username).strip(), "role": role,
-        "salt": salt, "pw_hash": pw_hash,
+        "email": (email or "").strip().lower(), "salt": salt, "pw_hash": pw_hash,
         "added_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }], columns=USER_FIELDS)
     EN._append(row, USERS_CSV, USERS_TABLE)

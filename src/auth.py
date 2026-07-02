@@ -1,8 +1,13 @@
 """Login gate for the Streamlit app.
 
-Per-user accounts live in the roster (src/registry). The env var APP_PASSWORD,
-if set, is an admin master key (recovery / initial setup). On a fresh install
-with no users and no APP_PASSWORD, a one-time 'create first admin' screen shows.
+Per-user accounts live in the roster (src/registry), created via email invite
+(src/invites) rather than an admin choosing a password for someone else — the
+user picks their own username and password when they activate their invite,
+and the same code mechanism powers 'forgot password'. The env var
+APP_PASSWORD, if set, is an admin master key (recovery / initial setup). On a
+fresh install with no users and no APP_PASSWORD, a one-time 'create first
+admin' screen shows (the only case where an account is self-provisioned
+without an invite, since no admin exists yet to send one).
 """
 from __future__ import annotations
 
@@ -12,6 +17,9 @@ from pathlib import Path
 import streamlit as st
 
 from src import registry as REG
+from src import invites as INV
+from src import notify_email as MAIL
+from src.config import load_config
 
 _ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
@@ -106,22 +114,102 @@ def _render_login(master: str | None) -> None:
     _brand_center(mid)
     mid.markdown(f"<h3 style='text-align:center;margin:.3rem 0 1rem'>{APP_NAME}</h3>",
                  unsafe_allow_html=True)
-    with mid.form("login"):
-        username = st.text_input("Email / username")
-        password = st.text_input("Password", type="password")
-        ok = st.form_submit_button("Log in", type="primary", use_container_width=True)
-    if ok:
-        user = REG.verify_login(username, password)
-        if user:
-            st.session_state["user"] = user
-            st.rerun()
-        elif master and hmac.compare_digest(password or "", master):
-            st.session_state["user"] = {"username": username or "admin",
-                                        "name": username or "Administrator",
-                                        "role": "Admin", "master": True}
-            st.rerun()
-        else:
-            mid.error("Invalid email/username or password.")
+
+    tab_login, tab_activate, tab_forgot = mid.tabs(
+        ["🔒 Sign in", "✨ Activate invite", "❓ Forgot password"])
+
+    with tab_login:
+        with st.form("login"):
+            username = st.text_input("Email / username")
+            password = st.text_input("Password", type="password")
+            ok = st.form_submit_button("Log in", type="primary", use_container_width=True)
+        if ok:
+            user = REG.verify_login(username, password)
+            if user:
+                st.session_state["user"] = user
+                st.rerun()
+            elif master and hmac.compare_digest(password or "", master):
+                st.session_state["user"] = {"username": username or "admin",
+                                            "name": username or "Administrator",
+                                            "role": "Admin", "master": True}
+                st.rerun()
+            else:
+                st.error("Invalid email/username or password.")
+
+    with tab_activate:
+        st.caption("Have a setup code from your admin? Enter it below and choose your "
+                   "own username and password.")
+        with st.form("activate_invite"):
+            code = st.text_input("Setup code")
+            act_username = st.text_input("Choose a username")
+            act_name = st.text_input("Full name")
+            p1 = st.text_input("Password", type="password", key="act_p1")
+            p2 = st.text_input("Confirm password", type="password", key="act_p2")
+            ok2 = st.form_submit_button("Activate account", type="primary", use_container_width=True)
+        if ok2:
+            inv = INV.get_valid(code, "setup")
+            if not inv:
+                st.error("Invalid or expired code. Ask your admin to resend the invite.")
+            elif not act_username.strip() or not p1:
+                st.error("Choose a username and password.")
+            elif p1 != p2:
+                st.error("Passwords do not match.")
+            else:
+                final_name = (act_name or inv.get("name") or act_username).strip()
+                added, msg = REG.add_user(act_username, final_name, inv.get("role") or "Staff",
+                                          p1, email=inv.get("email", ""))
+                if added:
+                    INV.mark_used(code)
+                    st.session_state["user"] = {"username": act_username.strip(), "name": final_name,
+                                                "role": inv.get("role") or "Staff", "master": False}
+                    st.success("Account activated — signing you in…")
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    with tab_forgot:
+        st.caption("Enter your username or email. If it matches an account, a reset code "
+                   "will be emailed to you (or your admin will be notified to assist).")
+        with st.form("forgot_password"):
+            ident = st.text_input("Username or email")
+            ok3 = st.form_submit_button("Request reset code", use_container_width=True)
+        if ok3:
+            user = REG.get_user(ident) or REG.get_user_by_email(ident)
+            if user:
+                code = INV.create_reset_code(user["username"], user.get("email", ""),
+                                             requested_by=ident)
+                email = (user.get("email") or "").strip()
+                if email:
+                    MAIL.send(
+                        load_config(), subject="Your password reset code",
+                        body=f"Your password reset code is: {code}\n"
+                             f"It expires in {INV.RESET_TTL_HOURS} hours.\n"
+                             f"Enter it under 'Forgot password → Reset with code' "
+                             f"on the app's login page.")
+            # Same message whether or not a match was found — avoids revealing
+            # which usernames/emails exist to an anonymous visitor.
+            st.success("If that account exists, reset instructions have been sent — "
+                       "or ask your admin to check pending resets in Manage Users.")
+
+        st.divider()
+        st.caption("Already have a reset code?")
+        with st.form("reset_with_code"):
+            rcode = st.text_input("Reset code")
+            rp1 = st.text_input("New password", type="password", key="reset_p1")
+            rp2 = st.text_input("Confirm new password", type="password", key="reset_p2")
+            ok4 = st.form_submit_button("Reset password", type="primary", use_container_width=True)
+        if ok4:
+            inv = INV.get_valid(rcode, "reset")
+            if not inv:
+                st.error("Invalid or expired code.")
+            elif not rp1:
+                st.error("Enter a new password.")
+            elif rp1 != rp2:
+                st.error("Passwords do not match.")
+            else:
+                REG.set_password(inv["username"], rp1)
+                INV.mark_used(rcode)
+                st.success("Password reset. You can now sign in on the **Sign in** tab.")
 
 
 def _render_first_admin() -> None:

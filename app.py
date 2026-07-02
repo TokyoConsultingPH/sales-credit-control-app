@@ -27,6 +27,7 @@ from src import registry as REG
 from src import billing_status as BS
 from src import sales_overrides as SO
 from src import quotation_requests as QR
+from src import invites as INV
 from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
@@ -577,21 +578,50 @@ def render_complete_engagement() -> None:
 def render_manage_users() -> None:
     st.title("👥 Manage users")
 
-    st.subheader("Employee roster")
-    with st.form("add_user", clear_on_submit=True):
-        a, b = st.columns(2)
-        new_username = a.text_input("Username *")
-        new_name = b.text_input("Full name")
-        c, d = st.columns(2)
-        new_role = c.selectbox("Role", REG.ROLES)
-        new_pw = d.text_input("Password *", type="password")
-        if st.form_submit_button("Add user", type="primary"):
-            ok, msg = REG.add_user(new_username, new_name, new_role, new_pw)
-            (st.success if ok else st.error)(msg)
-            if ok:
+    email_ok, email_msg = MAIL.status(cfg)
+    st.subheader("Invite a user")
+    st.caption(f"Add someone by email — they choose their own username and password when "
+               f"they activate. Email: {'on' if email_ok else 'off'} — {email_msg}")
+    with st.form("invite_user", clear_on_submit=True):
+        a, b, c = st.columns([2, 2, 1])
+        inv_email = a.text_input("Email *")
+        inv_name = b.text_input("Full name")
+        inv_role = c.selectbox("Role", REG.ROLES)
+        if st.form_submit_button("Send invite", type="primary"):
+            inv_email_clean = (inv_email or "").strip().lower()
+            if not inv_email_clean:
+                st.error("Email is required.")
+            elif REG.email_taken(inv_email_clean):
+                st.error(f"'{inv_email_clean}' already has an account.")
+            else:
+                code = INV.create_setup_invite(inv_email_clean, inv_name, inv_role,
+                                               invited_by=current_user().get("name", ""))
+                sent = False
+                if email_ok:
+                    sent, _msg = MAIL.send(
+                        cfg, subject="You're invited — set up your account",
+                        body=f"You've been invited to Sales & Credit Control.\n\n"
+                             f"Setup code: {code}\n"
+                             f"It expires in {INV.SETUP_TTL_HOURS} hours.\n\n"
+                             f"Go to the app's login page → 'Activate invite' tab, enter this "
+                             f"code, and choose your own username and password.")
                 _bust_caches()
-                st.rerun()
+                if sent:
+                    st.success(f"Invited **{inv_email_clean}** — setup code emailed to them.")
+                else:
+                    st.success(f"Invited **{inv_email_clean}**. Email isn't configured, so "
+                               f"share this setup code with them directly:")
+                    st.code(code)
 
+    pend_invites = INV.pending("setup")
+    if not pend_invites.empty:
+        with st.expander(f"📨 Pending invitations ({len(pend_invites)})"):
+            st.dataframe(
+                pend_invites[["email", "name", "role", "code", "created_at", "expires_at"]],
+                use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.subheader("Employee roster")
     users = cx_users()
     if users.empty:
         st.caption("No users yet.")
@@ -605,11 +635,33 @@ def render_manage_users() -> None:
                 _bust_caches()
                 st.rerun()
         with col2:
-            ru = st.selectbox("Reset password for", ["—"] + users["username"].astype(str).tolist())
-            rp = st.text_input("New password", type="password", key="resetpw")
-            if ru != "—" and rp and st.button("Reset password"):
-                REG.set_password(ru, rp)
-                st.success(f"Password reset for {ru}.")
+            ru = st.selectbox("Send password reset code for",
+                              ["—"] + users["username"].astype(str).tolist())
+            if ru != "—" and st.button("Send reset code"):
+                u = REG.get_user(ru) or {}
+                code = INV.create_reset_code(ru, u.get("email", ""),
+                                             requested_by=current_user().get("name", ""))
+                sent = False
+                if email_ok and (u.get("email") or "").strip():
+                    sent, _msg = MAIL.send(
+                        cfg, subject="Your password reset code",
+                        body=f"Your password reset code is: {code}\n"
+                             f"It expires in {INV.RESET_TTL_HOURS} hours.\n"
+                             f"Enter it under 'Forgot password → Reset with code' "
+                             f"on the login page.")
+                if sent:
+                    st.success(f"Reset code emailed to {ru}.")
+                else:
+                    st.success(f"Reset code for **{ru}** (email not configured/on file — "
+                               f"share this with them):")
+                    st.code(code)
+
+    pend_resets = INV.pending("reset")
+    if not pend_resets.empty:
+        with st.expander(f"🔑 Pending password reset requests ({len(pend_resets)})"):
+            st.dataframe(
+                pend_resets[["username", "email", "code", "created_at", "expires_at"]],
+                use_container_width=True, hide_index=True)
 
     st.divider()
     st.subheader("Activity — who reported which engagements")

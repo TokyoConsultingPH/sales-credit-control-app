@@ -19,6 +19,7 @@ data/sales_overrides.csv
 data/quotation_requests.csv
 data/quotation_request_status.csv
 data/quotation_request_qnum.csv
+data/invites.csv
 
 # Client PDFs / documents (e.g. quotation references) — keep out of Git
 *.pdf
