@@ -26,6 +26,7 @@ from src import notify_email as MAIL
 from src import registry as REG
 from src import billing_status as BS
 from src import sales_overrides as SO
+from src import quotation_requests as QR
 from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
@@ -101,6 +102,11 @@ def cx_users():
 @st.cache_data(ttl=300, show_spinner="Loading data from database…")
 def _load_db_tidy(_cfg, pwd, overrides, sql):
     return DB.load_from_db(_cfg, pwd, overrides, sql=sql)
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def cx_quotation_requests():
+    return QR.request_summary()
 
 
 DIMENSIONS = {"Branch": "branch", "Category": "category",
@@ -330,6 +336,95 @@ def render_quotation_form() -> None:
                         st.download_button(f"⬇️ {nm}", data, file_name=nm, key=f"att_{nm}")
                     else:
                         st.caption(f"⚠️ {nm} (file not found)")
+
+
+def render_quotation_requests() -> None:
+    """Employee form to request that a quotation be prepared for a client."""
+    st.title("📩 Quotation Requests")
+    st.caption("Request that a quotation be prepared for a prospective client. "
+               "Once it's prepared and signed, log it on **📝 Report Ordered Quotation**.")
+
+    with st.form("quotation_request", clear_on_submit=True):
+        st.markdown("##### Requestor & client")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            requested_by = st.text_input("Requested by (your name) *",
+                                         value=current_user().get("name", ""))
+            requestee_name = st.text_input("Name of Requestee")
+        with c2:
+            company_name = st.text_input("Company Name *")
+            addressee = st.text_input("Addressee")
+        with c3:
+            designation = st.text_input("Designation")
+            contact_email = st.text_input("Contact / Email")
+        company_address = st.text_input("Company / Address")
+
+        st.markdown("##### Services to be quoted")
+        st.caption("List each service on its own row. Use the **+** at the bottom for more lines.")
+        svc_template = pd.DataFrame([{"Service": ""}])
+        svc_lines = st.data_editor(
+            svc_template, num_rows="dynamic", use_container_width=True, hide_index=True,
+            column_config={"Service": st.column_config.TextColumn(
+                "Service", width="large", help="Type the service to be quoted")})
+
+        submitted = st.form_submit_button("📩 Submit quotation request", type="primary")
+
+    if submitted:
+        services = [str(r["Service"]).strip() for _, r in svc_lines.iterrows()
+                   if str(r.get("Service") or "").strip()]
+        errors = []
+        if not requested_by.strip():
+            errors.append("Requested by is required.")
+        if not company_name.strip():
+            errors.append("Company name is required.")
+        if not services:
+            errors.append("Add at least one service to be quoted.")
+        if errors:
+            for e in errors:
+                st.error(e)
+        else:
+            rid = QR.save_request(
+                requested_by=requested_by, requestee_name=requestee_name,
+                company_name=company_name, addressee=addressee, designation=designation,
+                company_address=company_address, contact_email=contact_email,
+                services=services)
+            _bust_caches()
+            st.success(f"Quotation request **{rid}** submitted for **{company_name}** "
+                       f"({len(services)} service(s)).")
+
+    st.divider()
+    st.subheader("Quotation requests")
+    reqs = cx_quotation_requests()
+    if reqs.empty:
+        st.info("No quotation requests yet.")
+        return
+    st.caption(f"{len(reqs)} request(s). Edit **Status** to track progress — changes are saved.")
+
+    display_cols = {
+        "request_id": "Request ID", "submitted_at": "Submitted", "requested_by": "Requested By",
+        "requestee_name": "Requestee", "company_name": "Company", "addressee": "Addressee",
+        "designation": "Designation", "contact_email": "Contact/Email",
+        "services": "Services", "status": "Status",
+    }
+    disp = reqs.rename(columns=display_cols)[list(display_cols.values())]
+    edited = st.data_editor(
+        disp, use_container_width=True, hide_index=True, key="qr_status_editor",
+        disabled=[c for c in disp.columns if c != "Status"],
+        column_config={"Status": st.column_config.SelectboxColumn(
+            "Status", options=QR.STATUS_OPTIONS, required=True)})
+
+    changed = 0
+    for i in range(len(disp)):
+        rid = reqs.iloc[i]["request_id"]
+        if str(disp.at[i, "Status"]) != str(edited.at[i, "Status"]):
+            QR.set_status(rid, edited.at[i, "Status"], current_user().get("name", ""))
+            changed += 1
+    if changed:
+        _bust_caches()
+        st.success(f"Saved {changed} status change(s).")
+
+    st.download_button("⬇️ Download requests (CSV)", disp.to_csv(index=False).encode("utf-8-sig"),
+                       file_name="quotation_requests.csv", mime="text/csv")
 
 
 def render_billing_notifications() -> None:
@@ -686,14 +781,17 @@ if st.sidebar.button("Log out", use_container_width=True):
 
 _pending_badge = len(cx_pending_notifs())
 _complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
-_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", _complete_label,
-          "🧾 Sales Database", "🗂️ Client Database"]
+_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", "📩 Quotation Requests",
+          _complete_label, "🧾 Sales Database", "🗂️ Client Database"]
 if _is_admin:
     _pages.append("👥 Manage Users")
 page = st.sidebar.radio("Page", _pages)
 st.sidebar.divider()
 if page == "📝 Report Ordered Quotation":
     render_quotation_form()
+    st.stop()
+if page == "📩 Quotation Requests":
+    render_quotation_requests()
     st.stop()
 if page.startswith("✅ Complete Engagement"):
     render_complete_engagement()
