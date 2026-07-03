@@ -61,11 +61,6 @@ USER = require_login()
 cfg = load_config()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
 
-# Centered logo banner at the top of every page.
-if LOGO_PATH:
-    _lc = st.columns([2, 1, 2])
-    _lc[1].image(str(LOGO_PATH), width=200)
-
 # --------------------------------------------------------------------------- #
 # Global interface polish (theme.toml handles colors; this covers layout,
 # the sidebar nav, cards, and tabs that Streamlit doesn't theme by default).
@@ -114,16 +109,19 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
 /* Top navigation bar (see st.container(key="topbar")). */
 .st-key-topbar {
     background: linear-gradient(90deg, #1F4E78, #2C6AA0);
-    padding: 10px 20px 6px;
+    padding: 8px 16px;
     border-radius: 12px;
     margin-bottom: 1.4rem;
+    overflow: hidden;
 }
 .st-key-topbar .tcf-brand {
-    color: #FFFFFF; font-weight: 700; font-size: 1.05rem; white-space: nowrap;
+    color: #FFFFFF; font-weight: 700; font-size: .95rem; white-space: nowrap;
 }
+.st-key-topbar [data-testid="stHorizontalBlock"] { gap: 6px; }
 .st-key-topbar [data-testid="stButton"] button {
-    border: none; border-radius: 8px; font-weight: 500; font-size: .88rem;
-    white-space: nowrap;
+    border: none; border-radius: 8px; font-weight: 500; font-size: .78rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 6px 4px; min-width: 0;
 }
 .st-key-topbar [data-testid="baseButton-secondary"] {
     background: transparent; color: rgba(255,255,255,.88);
@@ -134,6 +132,15 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
 .st-key-topbar [data-testid="baseButton-primary"] {
     background: rgba(255,255,255,.22); color: #FFFFFF;
     box-shadow: inset 0 -2px 0 #FFFFFF;
+}
+/* User avatar (initials) trigger — small rounded pill, not a full-width button. */
+.st-key-user_avatar button {
+    border-radius: 20px !important; font-weight: 700 !important; font-size: .72rem !important;
+    padding: 6px 10px !important; background: rgba(255,255,255,.16) !important;
+    color: #FFFFFF !important; border: none !important; white-space: nowrap;
+}
+.st-key-user_avatar button:hover {
+    background: rgba(255,255,255,.28) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -965,8 +972,8 @@ _pending_badge = len(cx_pending_notifs())
 
 NAV_ITEMS = [
     ("dashboard", "📊", "Dashboard"),
-    ("quotation", "📝", "Report Order"),
-    ("requests", "📩", "Quote Requests"),
+    ("quotation", "📝", "Report"),
+    ("requests", "📩", "Requests"),
     ("complete", "✅", f"Complete{f' ({_pending_badge})' if _pending_badge else ''}"),
     ("sales_db", "🧾", "Sales DB"),
     ("client_db", "🗂️", "Clients"),
@@ -974,29 +981,37 @@ NAV_ITEMS = [
 if _is_admin:
     NAV_ITEMS.append(("manage_users", "👥", "Users"))
 
+
+def _initials(name: str) -> str:
+    parts = [p for p in (name or "").split() if p]
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[1][0]).upper()
+    return (parts[0][:2] if parts else "US").upper()
+
+
 if "nav_page" not in st.session_state:
     st.session_state["nav_page"] = "dashboard"
 
 with st.container(key="topbar"):
-    tb_logo, tb_nav, tb_user = st.columns([2.4, 7.2, 1.4], vertical_alignment="center")
+    tb_logo, tb_nav, tb_user = st.columns([1.6, 8.6, 0.9], vertical_alignment="center")
     with tb_logo:
         if LOGO_PATH:
-            lc = st.columns([1, 3.4])
-            lc[0].image(str(LOGO_PATH), width=28)
-            lc[1].markdown("<span class='tcf-brand'>Sales &amp; Credit Control</span>",
+            lc = st.columns([1, 2.6])
+            lc[0].image(str(LOGO_PATH), width=26)
+            lc[1].markdown("<span class='tcf-brand'>Sales &amp; Credit</span>",
                           unsafe_allow_html=True)
         else:
-            st.markdown("<span class='tcf-brand'>Sales &amp; Credit Control</span>",
+            st.markdown("<span class='tcf-brand'>Sales &amp; Credit</span>",
                        unsafe_allow_html=True)
     with tb_nav:
-        nav_cols = st.columns(len(NAV_ITEMS))
+        nav_cols = st.columns(len(NAV_ITEMS), gap="small")
         for ncol, (nkey, nicon, nlabel) in zip(nav_cols, NAV_ITEMS):
-            if ncol.button(f"{nicon}  {nlabel}", key=f"nav_{nkey}", use_container_width=True,
+            if ncol.button(f"{nicon} {nlabel}", key=f"nav_{nkey}", use_container_width=True,
                           type="primary" if st.session_state["nav_page"] == nkey else "secondary"):
                 st.session_state["nav_page"] = nkey
                 st.rerun()
     with tb_user:
-        with st.popover(f"👤 {(USER.get('name') or 'User').split()[0]}", use_container_width=True):
+        with st.popover(_initials(USER.get("name")), key="user_avatar"):
             st.markdown(f"**{USER.get('name', 'User')}**")
             st.caption(USER.get("role", ""))
             if st.button("Log out", use_container_width=True, key="topbar_logout"):
