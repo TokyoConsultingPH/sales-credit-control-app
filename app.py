@@ -110,6 +110,31 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
 
 /* Dataframes / tables: rounded corners to match cards. */
 [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
+
+/* Top navigation bar (see st.container(key="topbar")). */
+.st-key-topbar {
+    background: linear-gradient(90deg, #1F4E78, #2C6AA0);
+    padding: 10px 20px 6px;
+    border-radius: 12px;
+    margin-bottom: 1.4rem;
+}
+.st-key-topbar .tcf-brand {
+    color: #FFFFFF; font-weight: 700; font-size: 1.05rem; white-space: nowrap;
+}
+.st-key-topbar [data-testid="stButton"] button {
+    border: none; border-radius: 8px; font-weight: 500; font-size: .88rem;
+    white-space: nowrap;
+}
+.st-key-topbar [data-testid="baseButton-secondary"] {
+    background: transparent; color: rgba(255,255,255,.88);
+}
+.st-key-topbar [data-testid="baseButton-secondary"]:hover {
+    background: rgba(255,255,255,.14); color: #FFFFFF;
+}
+.st-key-topbar [data-testid="baseButton-primary"] {
+    background: rgba(255,255,255,.22); color: #FFFFFF;
+    box-shadow: inset 0 -2px 0 #FFFFFF;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -933,41 +958,73 @@ def render_client_database() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Sidebar — page selector
+# Top navigation bar
 # --------------------------------------------------------------------------- #
-st.sidebar.title("📊 Sales & Credit Control")
+_is_admin = USER.get("role") == "Admin" or USER.get("master")
+_pending_badge = len(cx_pending_notifs())
+
+NAV_ITEMS = [
+    ("dashboard", "📊", "Dashboard"),
+    ("quotation", "📝", "Report Order"),
+    ("requests", "📩", "Quote Requests"),
+    ("complete", "✅", f"Complete{f' ({_pending_badge})' if _pending_badge else ''}"),
+    ("sales_db", "🧾", "Sales DB"),
+    ("client_db", "🗂️", "Clients"),
+]
+if _is_admin:
+    NAV_ITEMS.append(("manage_users", "👥", "Users"))
+
+if "nav_page" not in st.session_state:
+    st.session_state["nav_page"] = "dashboard"
+
+with st.container(key="topbar"):
+    tb_logo, tb_nav, tb_user = st.columns([2.4, 7.2, 1.4], vertical_alignment="center")
+    with tb_logo:
+        if LOGO_PATH:
+            lc = st.columns([1, 3.4])
+            lc[0].image(str(LOGO_PATH), width=28)
+            lc[1].markdown("<span class='tcf-brand'>Sales &amp; Credit Control</span>",
+                          unsafe_allow_html=True)
+        else:
+            st.markdown("<span class='tcf-brand'>Sales &amp; Credit Control</span>",
+                       unsafe_allow_html=True)
+    with tb_nav:
+        nav_cols = st.columns(len(NAV_ITEMS))
+        for ncol, (nkey, nicon, nlabel) in zip(nav_cols, NAV_ITEMS):
+            if ncol.button(f"{nicon}  {nlabel}", key=f"nav_{nkey}", use_container_width=True,
+                          type="primary" if st.session_state["nav_page"] == nkey else "secondary"):
+                st.session_state["nav_page"] = nkey
+                st.rerun()
+    with tb_user:
+        with st.popover(f"👤 {(USER.get('name') or 'User').split()[0]}", use_container_width=True):
+            st.markdown(f"**{USER.get('name', 'User')}**")
+            st.caption(USER.get("role", ""))
+            if st.button("Log out", use_container_width=True, key="topbar_logout"):
+                logout()
+                st.rerun()
+
 st.sidebar.caption(cfg.get("general", {}).get("company_name", ""))
 
-_is_admin = USER.get("role") == "Admin" or USER.get("master")
-st.sidebar.success(f"👤 {USER.get('name', 'User')} · {USER.get('role', '')}")
-if st.sidebar.button("Log out", use_container_width=True):
-    logout()
-    st.rerun()
+page_key = st.session_state["nav_page"]
+if page_key == "manage_users" and not _is_admin:
+    page_key = "dashboard"  # defensive: don't route a non-admin into an admin page
 
-_pending_badge = len(cx_pending_notifs())
-_complete_label = f"✅ Complete Engagement ({_pending_badge})" if _pending_badge else "✅ Complete Engagement"
-_pages = ["📊 Dashboard", "📝 Report Ordered Quotation", "📩 Quotation Requests",
-          _complete_label, "🧾 Sales Database", "🗂️ Client Database"]
-if _is_admin:
-    _pages.append("👥 Manage Users")
-page = st.sidebar.radio("Page", _pages)
-st.sidebar.divider()
-if page == "📝 Report Ordered Quotation":
+if page_key == "quotation":
     render_quotation_form()
     st.stop()
-if page == "📩 Quotation Requests":
+if page_key == "requests":
     render_quotation_requests()
     st.stop()
-if page.startswith("✅ Complete Engagement"):
+if page_key == "complete":
     render_complete_engagement()
     st.stop()
-if page == "🧾 Sales Database":
+if page_key == "sales_db":
     render_sales_database()
     st.stop()
-if page == "👥 Manage Users":
+if page_key == "manage_users":
     render_manage_users()
     st.stop()
-if page == "🗂️ Client Database":
+if page_key == "client_db":
     render_client_database()
     st.stop()
 
