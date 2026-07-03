@@ -45,7 +45,8 @@ def _find_logo():
 
 LOGO_PATH = _find_logo()
 
-st.set_page_config(page_title="Sales & Credit Control", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Sales & Credit Control", layout="wide",
+                   page_icon=str(LOGO_PATH) if LOGO_PATH else "📊")
 
 # On Streamlit Cloud, secrets are in st.secrets but not always exported as env
 # vars — bridge them so os.getenv() (used across the app) sees them.
@@ -64,6 +65,70 @@ CUR = cfg.get("general", {}).get("currency_symbol", "")
 if LOGO_PATH:
     _lc = st.columns([2, 1, 2])
     _lc[1].image(str(LOGO_PATH), width=200)
+
+# --------------------------------------------------------------------------- #
+# Global interface polish (theme.toml handles colors; this covers layout,
+# the sidebar nav, cards, and tabs that Streamlit doesn't theme by default).
+# --------------------------------------------------------------------------- #
+st.markdown("""
+<style>
+/* Tighter top padding so the page doesn't start so far down. */
+.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1200px; }
+
+/* Sidebar nav (the Page radio) styled as a proper menu list. */
+section[data-testid="stSidebar"] { border-right: 1px solid #E5E9F0; }
+section[data-testid="stSidebar"] div[role="radiogroup"] { gap: 2px; }
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+    padding: 8px 10px; border-radius: 8px; width: 100%;
+    transition: background-color .12s ease;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+    background-color: #EAF1F8;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
+    background-color: #E3ECF6; font-weight: 600;
+}
+
+/* Buttons: slightly rounder, consistent weight. */
+.stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {
+    border-radius: 8px; font-weight: 500;
+}
+
+/* Bordered containers (KPI / alert cards) — soft shadow for a lifted feel. */
+div[data-testid="stVerticalBlockBorderWrapper"] > div:has(> div[data-testid="stVerticalBlock"]) {
+    border-radius: 10px;
+}
+
+/* Metrics: compact value, muted label. */
+[data-testid="stMetricValue"] { font-size: 1.6rem; font-weight: 600; }
+[data-testid="stMetricLabel"] { font-size: .82rem; color: #6B7280; }
+
+/* Tabs: brand-colored active underline. */
+button[data-baseweb="tab"] { font-weight: 500; }
+button[data-baseweb="tab"][aria-selected="true"] { color: #1F4E78; }
+div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
+
+/* Dataframes / tables: rounded corners to match cards. */
+[data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def _page_header(text: str, caption: str | None = None) -> None:
+    """Consistent branded page header: icon badge + bold title (+ optional caption)."""
+    icon, _, title = text.partition(" ")
+    if not title:
+        icon, title = "", text
+    st.markdown(
+        f"<div style='display:flex;align-items:center;gap:12px;margin:0 0 .2rem;'>"
+        f"<span style='display:inline-flex;align-items:center;justify-content:center;"
+        f"width:42px;height:42px;border-radius:11px;background:#EAF1F8;font-size:21px;'>"
+        f"{icon}</span>"
+        f"<span style='font-size:1.65rem;font-weight:700;color:#1F2937;'>{title}</span>"
+        f"</div>", unsafe_allow_html=True)
+    if caption:
+        st.caption(caption)
+
 
 def _bust_caches() -> None:
     """Clear cached reads after a write so data refreshes immediately."""
@@ -201,7 +266,7 @@ def load_tcf(path_str: str) -> pd.DataFrame:
 def render_quotation_form() -> None:
     """Employee form to report an Ordered Quotation (mirrors the TCF Quotation doc)."""
     import datetime as _dt
-    st.title("📝 Report an Ordered Quotation")
+    _page_header("📝 Report an Ordered Quotation")
     st.caption(f"Fields follow the official Quotation (御見積書). Saved to the "
                f"**{Q.storage_label()}** with Condition = **Order**.")
 
@@ -341,7 +406,7 @@ def render_quotation_form() -> None:
 
 def render_quotation_requests() -> None:
     """Employee form to request that a quotation be prepared for a client."""
-    st.title("📩 Quotation Requests")
+    _page_header("📩 Quotation Requests")
     st.caption("Request that a quotation be prepared for a prospective client. "
                "Once it's prepared and signed, log it on **📝 Report Ordered Quotation**.")
 
@@ -503,7 +568,7 @@ def render_billing_notifications() -> None:
 
 def render_complete_engagement() -> None:
     """Employee marks a logged quotation complete -> triggers final-50% billing."""
-    st.title("✅ Complete an engagement")
+    _page_header("✅ Complete an engagement")
     email_ok, email_msg = MAIL.status(cfg)
     st.caption(f"Completing an engagement raises a final-50% billing notification. "
                f"Email: {'on' if email_ok else 'off'} — {email_msg}")
@@ -576,7 +641,7 @@ def render_complete_engagement() -> None:
 
 
 def render_manage_users() -> None:
-    st.title("👥 Manage users")
+    _page_header("👥 Manage users")
 
     email_ok, email_msg = MAIL.status(cfg)
     st.subheader("Invite a user")
@@ -683,7 +748,7 @@ def _billing_lines_from_db() -> pd.DataFrame:
 
 
 def render_sales_database() -> None:
-    st.title("🧾 Sales database")
+    _page_header("🧾 Sales database")
     tcf = find_tcf_workbook()
     if tcf:
         tidy = load_tcf(str(tcf))
@@ -825,7 +890,7 @@ def render_sales_database() -> None:
 
 
 def render_client_database() -> None:
-    st.title("🗂️ Client database")
+    _page_header("🗂️ Client database")
     st.caption("Built automatically from reported (signed) quotations.")
     cdb = cx_client_db()
     if cdb.empty:
@@ -970,7 +1035,8 @@ elif source == "Database (PostgreSQL)":
                 tbls = DB.list_tables(eng, schema)["table_name"].tolist()
                 tsel = st.selectbox("Table", tbls) if tbls else None
                 if tsel:
-                    st.dataframe(DB.list_columns(eng, tsel, schema), use_container_width=True)
+                    st.dataframe(DB.list_columns(eng, tsel, schema),
+                                use_container_width=True, hide_index=True)
             except Exception as e:
                 st.caption(f"(Connect to browse) {e}")
 
@@ -1074,7 +1140,7 @@ for w in DL.validate(df):
 # --------------------------------------------------------------------------- #
 # Header KPIs
 # --------------------------------------------------------------------------- #
-st.title("Sales Reporting & Credit Control")
+_page_header("📊 Sales Reporting & Credit Control")
 st.caption(f"Source: **{source_label}**  ·  grouped by **{dim_label}**  ·  "
            f"as of **{as_of.date()}**  ·  {len(df):,} billing rows")
 
@@ -1151,10 +1217,6 @@ def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
     with col.container(border=True):
         st.metric(label, value, delta=delta, delta_color=delta_color, help=help)
 
-
-st.markdown(
-    "<style>[data-testid='stMetricValue']{font-size:1.7rem;}</style>",
-    unsafe_allow_html=True)
 
 k = st.columns(6)
 _kpi(k[0], f"YTD sales ({as_of.year})", money_compact(ytd_sales),
@@ -1361,14 +1423,14 @@ with t2:
         st.dataframe(
             M.trend_metrics(df).style.format(
                 {"Invoiced": "{:,.0f}", "MoM %": "{:.1f}", "YoY %": "{:.1f}"}, na_rep="—"),
-            use_container_width=True)
+            use_container_width=True, hide_index=True)
 
 with t3:
     aging = M.ar_aging(df, cfg, as_of)
     st.markdown("**AR aging by department** (invoiced but not yet collected)")
     st.dataframe(
         aging.style.format({c: "{:,.0f}" for c in aging.columns if c != "Department"}),
-        use_container_width=True)
+        use_container_width=True, hide_index=True)
     bucket_cols = [c for c in aging.columns if c not in ("Department", "Total AR")]
     if not aging.empty:
         long = aging.melt(id_vars="Department", value_vars=bucket_cols,
@@ -1378,7 +1440,8 @@ with t3:
             use_container_width=True)
     st.markdown("**Overdue receivables (worst first)**")
     od = M.overdue_detail(df, cfg, as_of)
-    st.dataframe(od.style.format({"Outstanding": "{:,.0f}"}), use_container_width=True)
+    st.dataframe(od.style.format({"Outstanding": "{:,.0f}"}),
+                use_container_width=True, hide_index=True)
 
 with t4:
     st.markdown("#### 🔔 Due for billing — reported quotations (initial 50%) & "
