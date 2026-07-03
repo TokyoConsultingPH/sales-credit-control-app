@@ -67,8 +67,10 @@ CUR = cfg.get("general", {}).get("currency_symbol", "")
 # --------------------------------------------------------------------------- #
 st.markdown("""
 <style>
-/* Tighter top padding so the page doesn't start so far down. */
-.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1200px; }
+/* Tighter top padding so the page doesn't start so far down. This app is a
+   wide, data-dense dashboard (6-up KPI rows, wide tables) so we don't cap
+   the content width the way a text-reading page would. */
+.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 100%; }
 
 /* Sidebar nav (the Page radio) styled as a proper menu list. */
 section[data-testid="stSidebar"] { border-right: 1px solid #E5E9F0; }
@@ -95,7 +97,12 @@ div[data-testid="stVerticalBlockBorderWrapper"] > div:has(> div[data-testid="stV
 }
 
 /* Metrics: compact value, muted label. */
-[data-testid="stMetricValue"] { font-size: 1.6rem; font-weight: 600; }
+/* Metric values: never truncate with "..." — wrap instead, so a wide value
+   (e.g. "PHP 22.26M") is always fully readable regardless of column width. */
+[data-testid="stMetricValue"] {
+    font-size: 1.45rem; font-weight: 600;
+    white-space: normal; overflow: visible; text-overflow: unset; line-height: 1.25;
+}
 [data-testid="stMetricLabel"] { font-size: .82rem; color: #6B7280; }
 
 /* Tabs: brand-colored active underline. */
@@ -1079,7 +1086,7 @@ elif source == "Database (PostgreSQL)":
     pwd, overrides = None, None
     with st.sidebar.expander("🔌 Connection", expanded="db_tidy" not in st.session_state):
         if use_env_url:
-            st.success("Using DATABASE_URL from environment (Render).")
+            st.success("Using DATABASE_URL from environment.")
             schema = st.text_input("Schema", schema)
         else:
             st.warning("DATABASE_URL not detected — using manual connection. "
