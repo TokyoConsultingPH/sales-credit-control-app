@@ -181,7 +181,7 @@ def _render_login(master: str | None) -> None:
                 email = (user.get("email") or "").strip()
                 if email:
                     MAIL.send(
-                        load_config(), subject="Your password reset code",
+                        load_config(), to=email, subject="Your password reset code",
                         body=f"Your password reset code is: {code}\n"
                              f"It expires in {INV.RESET_TTL_HOURS} hours.\n"
                              f"Enter it under 'Forgot password → Reset with code' "

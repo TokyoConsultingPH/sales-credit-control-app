@@ -19,23 +19,29 @@ def _to_list(v) -> list[str]:
 
 
 def status(cfg: dict) -> tuple[bool, str]:
-    """Return (configured, human message)."""
+    """Return (configured, human message). `to_addrs` is NOT required here —
+    it's only needed for the billing-broadcast use case (see send())."""
     e = cfg.get("email", {}) or {}
     if not e.get("enabled"):
         return False, "Email is disabled (set email.enabled: true in settings.yaml)."
-    if not e.get("smtp_host") or not e.get("from_addr") or not _to_list(e.get("to_addrs")):
-        return False, "Email not fully configured (smtp_host, from_addr, to_addrs)."
+    if not e.get("smtp_host") or not e.get("from_addr"):
+        return False, "Email not fully configured (smtp_host, from_addr)."
     if not (os.getenv("TCF_SMTP_PASSWORD") or e.get("smtp_password")):
         return False, "No SMTP password (set env TCF_SMTP_PASSWORD)."
     return True, "Email configured."
 
 
-def send(cfg: dict, subject: str, body: str) -> tuple[bool, str]:
+def send(cfg: dict, subject: str, body: str, to: str | list[str] | None = None) -> tuple[bool, str]:
+    """Send an email. `to` sends to that specific recipient(s) (e.g. an
+    invited user's own address); if omitted, falls back to the configured
+    billing/management `to_addrs` list (used for billing broadcast alerts)."""
     ok, msg = status(cfg)
     if not ok:
         return False, msg
     e = cfg["email"]
-    recipients = _to_list(e["to_addrs"])
+    recipients = _to_list(to) if to else _to_list(e.get("to_addrs"))
+    if not recipients:
+        return False, "No recipient specified (pass `to=` or set email.to_addrs)."
     password = os.getenv("TCF_SMTP_PASSWORD") or e.get("smtp_password")
     user = e.get("smtp_user") or e["from_addr"]
 

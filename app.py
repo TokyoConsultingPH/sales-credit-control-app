@@ -773,7 +773,8 @@ def render_manage_users() -> None:
                 sent = False
                 if email_ok:
                     sent, _msg = MAIL.send(
-                        cfg, subject="You're invited — set up your account",
+                        cfg, to=inv_email_clean,
+                        subject="You're invited — set up your account",
                         body=f"You've been invited to Sales & Credit Control.\n\n"
                              f"Setup code: {code}\n"
                              f"It expires in {INV.SETUP_TTL_HOURS} hours.\n\n"
@@ -816,9 +817,10 @@ def render_manage_users() -> None:
                 code = INV.create_reset_code(ru, u.get("email", ""),
                                              requested_by=current_user().get("name", ""))
                 sent = False
-                if email_ok and (u.get("email") or "").strip():
+                _reset_email = (u.get("email") or "").strip()
+                if email_ok and _reset_email:
                     sent, _msg = MAIL.send(
-                        cfg, subject="Your password reset code",
+                        cfg, to=_reset_email, subject="Your password reset code",
                         body=f"Your password reset code is: {code}\n"
                              f"It expires in {INV.RESET_TTL_HOURS} hours.\n"
                              f"Enter it under 'Forgot password → Reset with code' "
