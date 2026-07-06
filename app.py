@@ -106,6 +106,16 @@ st.markdown("""
 .tcf-kpi-value { font-size: 1.5rem; font-weight: 700; margin: .3rem 0 .25rem; line-height: 1.2; }
 .tcf-kpi-sub { font-size: .8rem; font-weight: 500; }
 
+/* Form sections (e.g. Report Ordered Quotation) — white card per numbered
+   section, matching the shared panel look used elsewhere. */
+.st-key-qform_quotation, .st-key-qform_client,
+.st-key-qform_services, .st-key-qform_attachments {
+    background: #FFFFFF; border-radius: 14px; border: none !important;
+    box-shadow: 0 1px 4px rgba(16,24,40,.07); padding: 22px 24px; margin-bottom: 18px;
+}
+.tcf-form-section-title { font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 12px; }
+.tcf-form-hr { border: none; border-top: 1px solid #EEF0F3; margin: 0 0 18px; }
+
 /* Sidebar nav (the Page radio) styled as a proper menu list. */
 section[data-testid="stSidebar"] { border-right: 1px solid #E5E9F0; }
 section[data-testid="stSidebar"] div[role="radiogroup"] { gap: 2px; }
@@ -209,6 +219,13 @@ def _page_header(text: str, caption: str | None = None) -> None:
         f"</div>", unsafe_allow_html=True)
     if caption:
         st.caption(caption)
+
+
+def _form_section_header(num: str, title: str) -> None:
+    """Bold numbered section title + thin divider, used inside form cards."""
+    st.markdown(
+        f"<div class='tcf-form-section-title'>{num} · {title}</div>"
+        f"<hr class='tcf-form-hr'/>", unsafe_allow_html=True)
 
 
 def _bust_caches() -> None:
@@ -347,63 +364,66 @@ def load_tcf(path_str: str) -> pd.DataFrame:
 def render_quotation_form() -> None:
     """Employee form to report an Ordered Quotation (mirrors the TCF Quotation doc)."""
     import datetime as _dt
-    _page_header("📝 Report an Ordered Quotation")
+    _page_header("📋 Report an Ordered Quotation")
     st.caption(f"Fields follow the official Quotation (御見積書). Saved to the "
                f"**{Q.storage_label()}** with Condition = **Order**.")
 
     with st.form("ordered_quotation", clear_on_submit=True):
-        st.markdown("##### 1 · Quotation")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            submitted_by = st.text_input("Your name *", value=current_user().get("name", ""))
-        with c2:
-            quotation_number = st.text_input("Quotation no.", placeholder="Q-TCF-PM-26-122")
-        with c3:
-            issue_date = st.date_input("Issue date", value=_dt.date.today())
-        with c4:
-            order_date = st.date_input("Order date *", value=_dt.date.today(),
-                                       help="When the client acknowledged/ordered.")
+        with st.container(key="qform_quotation"):
+            _form_section_header("1", "Quotation")
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                submitted_by = st.text_input("Your name *", value=current_user().get("name", ""))
+            with c2:
+                quotation_number = st.text_input("Quotation no.", placeholder="Q-TCF-PM-26-122")
+            with c3:
+                issue_date = st.date_input("Issue date", value=_dt.date.today())
+            with c4:
+                order_date = st.date_input("Order date *", value=_dt.date.today(),
+                                           help="When the client acknowledged/ordered.")
 
-        st.markdown("##### 2 · Client")
-        d1, d2, d3 = st.columns(3)
-        with d1:
-            company = st.text_input("Company name *")
-            client_type = st.selectbox("Client", Q.CLIENT_TYPES)
-        with d2:
-            contact_person = st.text_input("Contact person")
-            contact_title = st.text_input("Title / position")
-        with d3:
-            contact_email = st.text_input("Email")
-            process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
-        contact_address = st.text_input("Address")
+        with st.container(key="qform_client"):
+            _form_section_header("2", "Client")
+            d1, d2, d3 = st.columns(3)
+            with d1:
+                company = st.text_input("Company name *")
+                client_type = st.selectbox("Client", Q.CLIENT_TYPES)
+            with d2:
+                contact_person = st.text_input("Contact person")
+                contact_title = st.text_input("Title / position")
+            with d3:
+                contact_email = st.text_input("Email")
+                process = st.selectbox("Process of contact", Q.CONTACT_PROCESS)
+            contact_address = st.text_input("Address")
+            branch = st.selectbox("Branch", Q.BRANCHES)
 
-        branch = st.selectbox("Branch", Q.BRANCHES)
+        with st.container(key="qform_services"):
+            _form_section_header("3", "Services ordered")
+            st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines. "
+                       "Set each line's **Invoiced month** (e.g. one line for the initial 50%, another for the final 50%).")
+            line_template = pd.DataFrame([
+                {"Service": "", "Department": None, "PIC": "",
+                 "Classification": "Spot", "Unit": "PHP/Year", "Price": 0.0, "Invoiced month": ""}
+            ])
+            lines = st.data_editor(
+                line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
+                column_config={
+                    "Service": st.column_config.TextColumn("Service", width="medium",
+                                                           help="Type the service name"),
+                    "Department": st.column_config.SelectboxColumn("Department", options=Q.DEPARTMENTS),
+                    "PIC": st.column_config.TextColumn("PIC", help="Person in charge of this service"),
+                    "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
+                    "Unit": st.column_config.SelectboxColumn("Unit", options=Q.UNITS),
+                    "Price": st.column_config.NumberColumn("Price (PHP)", min_value=0.0, format="%.0f"),
+                    "Invoiced month": st.column_config.TextColumn("Invoiced month", help="e.g. 2026-05 or 2026-05 (50%)"),
+                })
 
-        st.markdown("##### 3 · Services ordered")
-        st.caption("Add one row per service. Use the **+** at the bottom of the table for more lines. "
-                   "Set each line's **Invoiced month** (e.g. one line for the initial 50%, another for the final 50%).")
-        line_template = pd.DataFrame([
-            {"Service": "", "Department": None, "PIC": "",
-             "Classification": "Spot", "Unit": "PHP/Year", "Price": 0.0, "Invoiced month": ""}
-        ])
-        lines = st.data_editor(
-            line_template, num_rows="dynamic", use_container_width=True, hide_index=True,
-            column_config={
-                "Service": st.column_config.TextColumn("Service", width="medium",
-                                                       help="Type the service name"),
-                "Department": st.column_config.SelectboxColumn("Department", options=Q.DEPARTMENTS),
-                "PIC": st.column_config.TextColumn("PIC", help="Person in charge of this service"),
-                "Classification": st.column_config.SelectboxColumn("Classification", options=Q.CLASSIFICATIONS),
-                "Unit": st.column_config.SelectboxColumn("Unit", options=Q.UNITS),
-                "Price": st.column_config.NumberColumn("Price (PHP)", min_value=0.0, format="%.0f"),
-                "Invoiced month": st.column_config.TextColumn("Invoiced month", help="e.g. 2026-05 or 2026-05 (50%)"),
-            })
-
-        st.markdown("##### 4 · Attachments")
-        uploaded_files = st.file_uploader(
-            "Attach the signed quotation, PO, or supporting documents",
-            accept_multiple_files=True,
-            type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
+        with st.container(key="qform_attachments"):
+            _form_section_header("4", "Attachments")
+            uploaded_files = st.file_uploader(
+                "Attach the signed quotation, PO, or supporting documents",
+                accept_multiple_files=True,
+                type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
 
         submitted = st.form_submit_button("✅ Submit ordered quotation", type="primary")
 
