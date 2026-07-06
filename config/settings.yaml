@@ -130,7 +130,20 @@ email:
   to_addrs: ["tokyoconsultingfirmphilbranch@gmail.com"]  # billing/management broadcast list
 
 # ---------------------------------------------------------------------
-# 6. GENERAL
+# 6. XERO ACCOUNTING INTEGRATION — optional
+# Clicking "Mark billed" (Due for Billing) creates a matching DRAFT invoice
+# in Xero. Credentials come from env vars (never store them here):
+#   XERO_CLIENT_ID, XERO_CLIENT_SECRET  — from a Xero "Custom Connection"
+#   (developer.xero.com/myapps -> New app -> Custom connection).
+#   XERO_TENANT_ID — optional, only set if Xero's API asks for it.
+# ---------------------------------------------------------------------
+xero:
+  enabled: true
+  sales_account_code: "200"   # Xero chart-of-accounts code for sales/service revenue
+  currency: "PHP"
+
+# ---------------------------------------------------------------------
+# 7. GENERAL
 # ---------------------------------------------------------------------
 general:
   currency_symbol: "PHP "

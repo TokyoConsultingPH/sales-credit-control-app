@@ -29,6 +29,7 @@ from src import billing_status as BS
 from src import sales_overrides as SO
 from src import quotation_requests as QR
 from src import invites as INV
+from src import xero_client as XERO
 from src.auth import require_login, current_user, logout
 
 ROOT = Path(__file__).resolve().parent
@@ -653,7 +654,10 @@ def render_quotation_requests() -> None:
 def render_billing_notifications() -> None:
     """Pending final-50% billing notifications with a 'mark as billed' action."""
     pending = cx_pending_notifs()
+    xero_ok, xero_msg = XERO.configured()
     st.subheader(f"🔔 Pending billings — initial & final 50% ({len(pending)})")
+    st.caption(f"Xero: {'on' if xero_ok else 'off'} — {xero_msg} "
+               "'Mark billed' also creates a matching draft invoice in Xero.")
     if pending.empty:
         st.success("No pending billings. ✅")
         return
@@ -671,6 +675,11 @@ def render_billing_notifications() -> None:
                                    file_name=nm, key=f"noc_{n['notif_id']}_{nm}")
         if c2.button("Mark billed", key=f"bill_{n['notif_id']}"):
             EN.mark_billed(n["notif_id"])
+            reference = f"{n['quotation_number'] or ''} L{n['line_no']}".strip()
+            sent, xmsg = XERO.push_billing_to_xero(
+                cfg, company=n["company"], service=n["service"],
+                amount=float(n["amount"]), reference=reference)
+            st.toast(xmsg, icon="✅" if sent else "⚠️")
             _bust_caches()
             st.rerun()
 
