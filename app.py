@@ -878,6 +878,10 @@ def render_manage_users() -> None:
         else:
             st.caption("Authorise once and the app keeps the connection alive. "
                        "You'll be sent to xero.com to approve access, then back here.")
+            st.code(XERO.redirect_uri(), language=None)
+            st.caption("⬆️ This exact URL (character for character) must be listed under "
+                       "**Redirect URIs** in your app at developer.xero.com. If it shows "
+                       "localhost, the XERO_REDIRECT_URI secret isn't set on this deployment.")
             st.link_button("Connect to Xero", XERO.connect_url(), type="primary")
 
     st.divider()
