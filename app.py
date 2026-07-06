@@ -7,6 +7,7 @@ Run:  streamlit run app.py
 """
 from __future__ import annotations
 
+import html
 import os
 from pathlib import Path
 import pandas as pd
@@ -67,10 +68,43 @@ CUR = cfg.get("general", {}).get("currency_symbol", "")
 # --------------------------------------------------------------------------- #
 st.markdown("""
 <style>
+/* Soft page background so white cards read as distinct panels. */
+.stApp { background-color: #F5F6FA; }
+
 /* Tighter top padding so the page doesn't start so far down. This app is a
    wide, data-dense dashboard (6-up KPI rows, wide tables) so we don't cap
    the content width the way a text-reading page would. */
 .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 100%; }
+
+/* Section headers ("At a glance", "Leaderboards"). */
+.tcf-section-header { font-size: 1.2rem; font-weight: 700; color: #111827; margin: 1.6rem 0 .8rem; }
+
+/* Shared white "panel" card look for chart/leaderboard containers. */
+.st-key-card_billed, .st-key-card_aging,
+.st-key-card_lb_clients, .st-key-card_lb_depts, .st-key-card_lb_eng {
+    background: #FFFFFF; border-radius: 14px; border: none !important;
+    box-shadow: 0 1px 4px rgba(16,24,40,.07); padding: 6px 4px;
+}
+.tcf-card-title { font-size: .95rem; font-weight: 700; color: #111827; margin: 4px 0 8px 6px; }
+.tcf-lb-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 6px; border-bottom: 1px solid #F0F1F4; font-size: .88rem;
+}
+.tcf-lb-row:last-child { border-bottom: none; }
+.tcf-lb-name { color: #374151; }
+.tcf-lb-amount { font-weight: 700; color: #111827; }
+
+/* KPI cards. */
+.tcf-kpi-card {
+    background: #FFFFFF; border-radius: 14px; padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(16,24,40,.07);
+}
+.tcf-kpi-label {
+    font-size: .7rem; font-weight: 700; letter-spacing: .04em; color: #8A94A6;
+    text-transform: uppercase;
+}
+.tcf-kpi-value { font-size: 1.5rem; font-weight: 700; margin: .3rem 0 .25rem; line-height: 1.2; }
+.tcf-kpi-sub { font-size: .8rem; font-weight: 500; }
 
 /* Sidebar nav (the Page radio) styled as a proper menu list. */
 section[data-testid="stSidebar"] { border-right: 1px solid #E5E9F0; }
@@ -118,7 +152,7 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
    padded content column via the viewport-width technique (robust regardless
    of Streamlit's own container padding, unlike a fixed negative margin). */
 .st-key-topbar {
-    background: linear-gradient(90deg, #1F4E78, #2C6AA0);
+    background: #16233D;
     width: 100vw;
     position: relative;
     left: 50%;
@@ -146,8 +180,7 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
     background: rgba(255,255,255,.14); color: #FFFFFF;
 }
 .st-key-topbar [data-testid="baseButton-primary"] {
-    background: rgba(255,255,255,.22); color: #FFFFFF;
-    box-shadow: inset 0 -2px 0 #FFFFFF;
+    background: #2C4470; color: #FFFFFF; font-weight: 700;
 }
 /* User avatar (initials) trigger — small rounded pill, not a full-width button. */
 .st-key-user_avatar button {
@@ -1022,7 +1055,7 @@ with st.container(key="topbar"):
     with tb_nav:
         nav_cols = st.columns(len(NAV_ITEMS), gap="small")
         for ncol, (nkey, nicon, nlabel) in zip(nav_cols, NAV_ITEMS):
-            if ncol.button(f"{nicon} {nlabel}", key=f"nav_{nkey}", use_container_width=True,
+            if ncol.button(nlabel, key=f"nav_{nkey}", use_container_width=True,
                           type="primary" if st.session_state["nav_page"] == nkey else "secondary"):
                 st.session_state["nav_page"] = nkey
                 st.rerun()
@@ -1301,100 +1334,124 @@ if not _mt.empty:
         mom = (monthly["invoiced"].iloc[-1] - monthly["invoiced"].iloc[-2]) / monthly["invoiced"].iloc[-2] * 100
 
 
-def _kpi(col, label, value, delta=None, delta_color="normal", help=None):
-    with col.container(border=True):
-        st.metric(label, value, delta=delta, delta_color=delta_color, help=help)
+_KPI_DARK, _KPI_GREEN, _KPI_RED, _KPI_ORANGE, _KPI_BLUE, _KPI_GRAY = (
+    "#111827", "#16A34A", "#DC2626", "#D97706", "#2563EB", "#6B7280")
+
+
+def _kpi_card(col, label, value, value_color, sub_text, sub_color, tooltip="") -> None:
+    with col:
+        st.markdown(
+            f"<div class='tcf-kpi-card' title='{tooltip}'>"
+            f"<div class='tcf-kpi-label'>{label}</div>"
+            f"<div class='tcf-kpi-value' style='color:{value_color};'>{value}</div>"
+            f"<div class='tcf-kpi-sub' style='color:{sub_color};'>{sub_text}</div>"
+            f"</div>", unsafe_allow_html=True)
 
 
 k = st.columns(6)
-_kpi(k[0], f"YTD sales ({as_of.year})", money_compact(ytd_sales),
-     f"{yoy_ytd:+.0f}% vs {as_of.year - 1}" if yoy_ytd is not None else f"through {as_of.date()}",
-     "normal" if yoy_ytd is not None else "off",
-     help=f"{money(ytd_sales)} · Jan 1–{as_of.date()} vs same period {as_of.year - 1} "
-          f"({money(ytd_prior)}).")
-_kpi(k[1], "Billed (selected)", money_compact(total_inv),
-     f"{mom:+.0f}% MoM" if mom is not None else None, help=money(total_inv))
-_kpi(k[2], "Collected", money_compact(total_rec), f"{coll_pct:.0f}% collection rate",
-     "off", help=money(total_rec))
-_kpi(k[3], "Outstanding AR", money_compact(total_ar),
-     f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else None,
-     "off", help=money(total_ar))
-_kpi(k[4], "High-risk overdue", money_compact(hr_amt), f"{len(hr)} items",
-     "off", help=money(hr_amt))
-_kpi(k[5], "Due for billing", f"{len(due)} items", money(due_amt), "off",
-     help=f"Current month ({_cur_month}) — reported quotations + completions.")
+_kpi_card(k[0], f"YTD sales ({as_of.year})", money_compact(ytd_sales), _KPI_DARK,
+         f"{yoy_ytd:+.0f}% vs {as_of.year - 1}" if yoy_ytd is not None else f"through {as_of.date()}",
+         _KPI_GREEN if (yoy_ytd or 0) >= 0 else _KPI_RED,
+         tooltip=f"{money(ytd_sales)} — Jan 1-{as_of.date()} vs same period "
+                 f"{as_of.year - 1} ({money(ytd_prior)})")
+_kpi_card(k[1], "Billed (selected)", money_compact(total_inv), _KPI_DARK,
+         f"{mom:+.0f}% MoM" if mom is not None else "&nbsp;",
+         _KPI_GREEN if (mom or 0) >= 0 else _KPI_RED, tooltip=money(total_inv))
+_kpi_card(k[2], "Collected", money_compact(total_rec), _KPI_DARK,
+         f"{coll_pct:.0f}% collection rate", _KPI_BLUE, tooltip=money(total_rec))
+_kpi_card(k[3], "Outstanding AR", money_compact(total_ar), _KPI_ORANGE,
+         f"{total_ar / total_inv * 100:.0f}% of billed" if total_inv else "&nbsp;",
+         _KPI_GRAY, tooltip=money(total_ar))
+_kpi_card(k[4], "High-risk overdue", money_compact(hr_amt), _KPI_RED,
+         f"{len(hr)} items", _KPI_GRAY, tooltip=money(hr_amt))
+_kpi_card(k[5], "Due for billing", f"{len(due)} items", _KPI_DARK,
+         money_compact(due_amt), _KPI_GRAY,
+         tooltip=f"Current month ({_cur_month}) — reported quotations + completions.")
 
 # --------------------------------------------------------------------------- #
 # At a glance
 # --------------------------------------------------------------------------- #
-st.markdown("#### At a glance")
+st.markdown("<div class='tcf-section-header'>At a glance</div>", unsafe_allow_html=True)
 g1, g2 = st.columns([3, 2])
 with g1:
-    if monthly is not None and not monthly.empty:
-        long = monthly.reset_index().melt(
-            "Month", value_vars=["invoiced", "received"], var_name="Metric", value_name="Amount")
-        long["Metric"] = long["Metric"].map({"invoiced": "Billed", "received": "Collected"})
-        fig = px.area(long, x="Month", y="Amount", color="Metric",
-                      title="Billings vs collections by month",
-                      color_discrete_map={"Billed": "#378ADD", "Collected": "#1D9E75"})
-        fig.update_layout(height=290, margin=dict(t=40, b=0, l=0, r=0),
-                          legend=dict(orientation="h", y=1.12, title=None))
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No dated data to chart.")
+    with st.container(key="card_billed"):
+        st.markdown("<div class='tcf-card-title'>Billings vs collections by month</div>",
+                   unsafe_allow_html=True)
+        if monthly is not None and not monthly.empty:
+            long = monthly.reset_index().melt(
+                "Month", value_vars=["invoiced", "received"], var_name="Metric", value_name="Amount")
+            long["Metric"] = long["Metric"].map({"invoiced": "Billed", "received": "Collected"})
+            fig = px.area(long, x="Month", y="Amount", color="Metric", line_shape="spline",
+                         color_discrete_map={"Billed": "#3B82F6", "Collected": "#14B8A6"})
+            fig.update_traces(line=dict(width=2))
+            fig.update_layout(
+                height=280, margin=dict(t=10, b=0, l=0, r=0),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                           xanchor="right", x=1, title=None),
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                yaxis=dict(gridcolor="#EEF1F5", zeroline=False),
+                xaxis=dict(showgrid=False))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No dated data to chart.")
 with g2:
-    aging = M.ar_aging(df, cfg, as_of)
-    buckets = [c for c in aging.columns if c not in ("Department", "Total AR")]
-    if not aging.empty and buckets and aging[buckets].to_numpy().sum() > 0:
-        tot = aging[buckets].sum()
-        ad = pd.DataFrame({"Bucket": tot.index, "Amount": tot.values})
-        fig = px.pie(ad, names="Bucket", values="Amount", hole=0.58, title="AR aging",
-                     color_discrete_sequence=["#9FE1CB", "#FAC775", "#F0997B", "#E24B4A", "#A32D2D"])
-        fig.update_layout(height=290, margin=dict(t=40, b=0, l=0, r=0),
-                          legend=dict(orientation="h", y=-0.1, title=None))
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No open AR.")
+    with st.container(key="card_aging"):
+        st.markdown("<div class='tcf-card-title'>AR Aging</div>", unsafe_allow_html=True)
+        aging = M.ar_aging(df, cfg, as_of)
+        buckets = [c for c in aging.columns if c not in ("Department", "Total AR")]
+        if not aging.empty and buckets and aging[buckets].to_numpy().sum() > 0:
+            tot = aging[buckets].sum()
+            ad = pd.DataFrame({"Bucket": tot.index, "Amount": tot.values})
+            _aging_colors = {"Current": "#22C55E"}
+            _seq = ["#3B82F6", "#FACC15", "#FB923C", "#EF4444"]
+            for i, b in enumerate([x for x in buckets if x != "Current"]):
+                _aging_colors[b] = _seq[i] if i < len(_seq) else "#9CA3AF"
+            fig = px.pie(ad, names="Bucket", values="Amount", hole=0.62,
+                        color="Bucket", color_discrete_map=_aging_colors)
+            fig.update_layout(
+                height=280, margin=dict(t=10, b=0, l=0, r=0), showlegend=True,
+                legend=dict(orientation="h", y=-0.15, title=None),
+                annotations=[dict(text=f"Total<br>{money_compact(tot.sum())}", x=0.5, y=0.5,
+                                  showarrow=False, font=dict(size=13, color="#374151"))])
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No open AR.")
 
 # --------------------------------------------------------------------------- #
 # Leaderboards
 # --------------------------------------------------------------------------- #
-st.markdown("#### Leaderboards")
+st.markdown("<div class='tcf-section-header'>Leaderboards</div>", unsafe_allow_html=True)
 
 
-def _lb_chart(agg, title, n=8):
-    agg = agg[agg["Amount"] > 0].sort_values("Amount", ascending=True).tail(n)
-    if agg.empty:
-        st.caption(f"No data for {title.lower()}.")
-        return False
-    fig = px.bar(agg, x="Amount", y="Label", orientation="h", title=title, text="Amount")
-    fig.update_traces(marker_color="#534AB7", texttemplate="%{text:,.0f}",
-                      textposition="outside", cliponaxis=False)
-    fig.update_layout(height=300, margin=dict(t=40, b=0, l=0, r=30),
-                      yaxis_title=None, xaxis_title=None, xaxis_visible=False, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
-    return True
-
-
-def _drill_to(dtype, value):
-    st.session_state["drill"] = {"type": dtype, "value": value}
-    st.rerun()
+def _lb_list(col, agg, title, key, n=5) -> None:
+    with col:
+        with st.container(key=key):
+            st.markdown(f"<div class='tcf-card-title'>{title}</div>", unsafe_allow_html=True)
+            agg = agg[agg["Amount"] > 0].sort_values("Amount", ascending=False).head(n)
+            if agg.empty:
+                st.caption(f"No data for {title.lower()}.")
+                return
+            rows = "".join(
+                f"<div class='tcf-lb-row'><span class='tcf-lb-name'>{html.escape(str(r.Label))}</span>"
+                f"<span class='tcf-lb-amount'>{money_compact(r.Amount)}</span></div>"
+                for r in agg.itertuples()
+            )
+            st.markdown(rows, unsafe_allow_html=True)
 
 
 lb = st.columns(3)
-with lb[0]:
-    _cl = df.groupby("client")["invoiced"].sum().reset_index()
-    _cl.columns = ["Label", "Amount"]
-    _lb_chart(_cl, "Top clients (billed)")
-with lb[1]:
-    _dp = df.groupby("department")["invoiced"].sum().reset_index()
-    _dp.columns = ["Label", "Amount"]
-    _lb_chart(_dp, f"Top {dim_label.lower()}s (billed)")
-with lb[2]:
-    _en = df.copy()
-    _en["Label"] = _en["engagement"].astype(str) + " · " + _en["client"].astype(str)
-    _ea = _en.groupby("Label")["invoiced"].sum().reset_index().rename(columns={"invoiced": "Amount"})
-    _lb_chart(_ea, "Top engagements (billed)")
+_cl = df.groupby("client")["invoiced"].sum().reset_index()
+_cl.columns = ["Label", "Amount"]
+_lb_list(lb[0], _cl, "Top clients (billed)", "card_lb_clients")
+
+_dp = df.groupby("department")["invoiced"].sum().reset_index()
+_dp.columns = ["Label", "Amount"]
+_lb_list(lb[1], _dp, f"Top {dim_label.lower()}s (billed)", "card_lb_depts")
+
+_en = df.copy()
+_en["Label"] = _en["engagement"].astype(str) + " · " + _en["client"].astype(str)
+_ea = _en.groupby("Label")["invoiced"].sum().reset_index().rename(columns={"invoiced": "Amount"})
+_lb_list(lb[2], _ea, "Top engagements (billed)", "card_lb_eng")
 
 # --------------------------------------------------------------------------- #
 # Alerts
