@@ -109,7 +109,9 @@ st.markdown("""
 /* Form sections (e.g. Report Ordered Quotation) — white card per numbered
    section, matching the shared panel look used elsewhere. */
 .st-key-qform_quotation, .st-key-qform_client,
-.st-key-qform_services, .st-key-qform_attachments {
+.st-key-qform_services, .st-key-qform_attachments,
+.st-key-qreq_details, .st-key-qreq_client,
+.st-key-qreq_services, .st-key-qreq_attachments {
     background: #FFFFFF; border-radius: 14px; border: none !important;
     box-shadow: 0 1px 4px rgba(16,24,40,.07); padding: 22px 24px; margin-bottom: 18px;
 }
@@ -508,49 +510,55 @@ def render_quotation_form() -> None:
 def render_quotation_requests() -> None:
     """Employee form to request that a quotation be prepared for a client."""
     _page_header("📩 Quotation Requests")
-    st.caption("Request that a quotation be prepared for a prospective client. "
-               "Once it's prepared and signed, log it on **📝 Report Ordered Quotation**.")
+    st.caption("Provide details about the client and services needed. Your request is saved "
+               "and tracked below. Once it's prepared and signed, log it on "
+               "**📝 Report Ordered Quotation**.")
 
     with st.form("quotation_request", clear_on_submit=True):
-        st.markdown("##### Requestor & client")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            requested_by = st.text_input("Requested by (your name) *",
-                                         value=current_user().get("name", ""))
-            requestee_name = st.text_input("Name of Requestee")
-        with c2:
-            company_name = st.text_input("Company Name *")
-            addressee = st.text_input("Addressee")
-        with c3:
-            designation = st.text_input("Designation")
-            contact_email = st.text_input("Contact / Email")
-        c4, c5 = st.columns(2)
-        with c4:
+        with st.container(key="qreq_details"):
+            _form_section_header("1", "Request details")
+            c1, c2 = st.columns(2)
+            with c1:
+                requested_by = st.text_input("Your name *", value=current_user().get("name", ""))
+            with c2:
+                quotation_number = st.text_input(
+                    "Quotation Number", placeholder="Leave blank if not yet assigned")
+
+        with st.container(key="qreq_client"):
+            _form_section_header("2", "Client information")
+            c3, c4, c5 = st.columns(3)
+            with c3:
+                company_name = st.text_input("Company Name *")
+                designation = st.text_input("Designation")
+            with c4:
+                requestee_name = st.text_input("Name of Requestee")
+                contact_email = st.text_input("Contact / Email")
+            with c5:
+                addressee = st.text_input("Addressee")
             company_address = st.text_input("Company / Address")
-        with c5:
-            quotation_number = st.text_input(
-                "Quotation Number", placeholder="Leave blank if not yet assigned")
 
-        st.markdown("##### Services to be quoted")
-        st.caption("List each service on its own row. Use the **+** at the bottom for more lines.")
-        svc_template = pd.DataFrame([
-            {"Service": "", "Unit": "PHP/Year", "Unit Price": 0.0}
-        ])
-        svc_lines = st.data_editor(
-            svc_template, num_rows="dynamic", use_container_width=True, hide_index=True,
-            column_config={
-                "Service": st.column_config.TextColumn(
-                    "Service", width="large", help="Type the service to be quoted"),
-                "Unit": st.column_config.SelectboxColumn("Unit", options=QR.UNITS),
-                "Unit Price": st.column_config.NumberColumn(
-                    "Unit Price", min_value=0.0, format="%.0f"),
-            })
+        with st.container(key="qreq_services"):
+            _form_section_header("3", "Services to be quoted")
+            st.caption("List each service on its own row. Use the **+** at the bottom for more lines.")
+            svc_template = pd.DataFrame([
+                {"Service": "", "Unit": "PHP/Year", "Unit Price": 0.0}
+            ])
+            svc_lines = st.data_editor(
+                svc_template, num_rows="dynamic", use_container_width=True, hide_index=True,
+                column_config={
+                    "Service": st.column_config.TextColumn(
+                        "Service", width="large", help="Type the service to be quoted"),
+                    "Unit": st.column_config.SelectboxColumn("Unit", options=QR.UNITS),
+                    "Unit Price": st.column_config.NumberColumn(
+                        "Unit Price", min_value=0.0, format="%.0f"),
+                })
 
-        st.markdown("##### Attachments")
-        qr_files = st.file_uploader(
-            "Attach supporting documents (e.g. client request, reference quotation)",
-            accept_multiple_files=True,
-            type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
+        with st.container(key="qreq_attachments"):
+            _form_section_header("4", "Attachments")
+            qr_files = st.file_uploader(
+                "Attach supporting documents (e.g. client request, reference quotation)",
+                accept_multiple_files=True,
+                type=["pdf", "png", "jpg", "jpeg", "xlsx", "xls", "docx", "doc", "csv"])
 
         submitted = st.form_submit_button("📩 Submit quotation request", type="primary")
 
