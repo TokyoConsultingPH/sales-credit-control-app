@@ -881,7 +881,7 @@ def render_sales_database() -> None:
     default_idx = years.index(2026) if 2026 in years else len(years) - 1
     year = st.selectbox("Credit Control year", years, index=default_idx)
     st.caption(f"**Credit Control {year}** layout — one row per engagement with monthly "
-               f"fees (Jan–Dec), from {tcf.name}.")
+               f"fees (Jan–Dec), from {source_note}.")
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
