@@ -113,12 +113,21 @@ div[data-baseweb="tab-highlight"] { background-color: #1F4E78; }
 /* Dataframes / tables: rounded corners to match cards. */
 [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
 
-/* Top navigation bar (see st.container(key="topbar")). */
+/* Top navigation bar (see st.container(key="topbar")) — full-bleed edge to
+   edge like a real app chrome bar, breaking out of Streamlit's centered,
+   padded content column via the viewport-width technique (robust regardless
+   of Streamlit's own container padding, unlike a fixed negative margin). */
 .st-key-topbar {
     background: linear-gradient(90deg, #1F4E78, #2C6AA0);
-    padding: 8px 16px;
-    border-radius: 12px;
-    margin-bottom: 1.4rem;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding: 10px 28px;
+    border-radius: 0;
+    margin-bottom: 1.6rem;
     overflow: hidden;
 }
 .st-key-topbar .tcf-brand {
