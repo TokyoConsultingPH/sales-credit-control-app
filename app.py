@@ -52,7 +52,8 @@ st.set_page_config(page_title="Sales & Credit Control", layout="wide",
 
 # On Streamlit Cloud, secrets are in st.secrets but not always exported as env
 # vars — bridge them so os.getenv() (used across the app) sees them.
-for _k in ("DATABASE_URL", "APP_PASSWORD", "TCF_SMTP_PASSWORD"):
+for _k in ("DATABASE_URL", "APP_PASSWORD", "TCF_SMTP_PASSWORD",
+           "XERO_CLIENT_ID", "XERO_CLIENT_SECRET", "XERO_REDIRECT_URI"):
     try:
         if _k in st.secrets and not os.getenv(_k):
             os.environ[_k] = str(st.secrets[_k])
@@ -61,6 +62,17 @@ for _k in ("DATABASE_URL", "APP_PASSWORD", "TCF_SMTP_PASSWORD"):
 
 USER = require_login()
 cfg = load_config()
+
+# Xero OAuth callback: after an admin approves access on xero.com, Xero
+# redirects back here with ?code=...&state=... — finish the token exchange.
+if "code" in st.query_params and "state" in st.query_params:
+    if USER.get("role") == "Admin" or USER.get("master"):
+        _xok, _xmsg = XERO.complete_connect(st.query_params["code"],
+                                            st.query_params["state"])
+        st.query_params.clear()
+        (st.success if _xok else st.error)(_xmsg)
+    else:
+        st.query_params.clear()
 CUR = cfg.get("general", {}).get("currency_symbol", "")
 
 # --------------------------------------------------------------------------- #
@@ -847,6 +859,26 @@ def render_manage_users() -> None:
             st.dataframe(
                 pend_resets[["username", "email", "code", "created_at", "expires_at"]],
                 use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.subheader("🔗 Xero connection")
+    _cid = os.getenv("XERO_CLIENT_ID")
+    if not _cid or not os.getenv("XERO_CLIENT_SECRET"):
+        st.caption("Set the XERO_CLIENT_ID / XERO_CLIENT_SECRET secrets to enable the "
+                   "Xero integration (draft invoices on 'Mark billed').")
+    else:
+        _conn = XERO.load_connection()
+        if _conn:
+            st.success(f"Connected to **{_conn.get('org_name') or 'Xero organisation'}** "
+                       f"(since {_conn.get('updated_at', '')}). 'Mark billed' now creates "
+                       f"a matching draft invoice in Xero.")
+            if st.button("Disconnect Xero"):
+                XERO.disconnect()
+                st.rerun()
+        else:
+            st.caption("Authorise once and the app keeps the connection alive. "
+                       "You'll be sent to xero.com to approve access, then back here.")
+            st.link_button("Connect to Xero", XERO.connect_url(), type="primary")
 
     st.divider()
     st.subheader("Activity — who reported which engagements")

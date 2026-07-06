@@ -132,10 +132,13 @@ email:
 # ---------------------------------------------------------------------
 # 6. XERO ACCOUNTING INTEGRATION — optional
 # Clicking "Mark billed" (Due for Billing) creates a matching DRAFT invoice
-# in Xero. Credentials come from env vars (never store them here):
-#   XERO_CLIENT_ID, XERO_CLIENT_SECRET  — from a Xero "Custom Connection"
-#   (developer.xero.com/myapps -> New app -> Custom connection).
-#   XERO_TENANT_ID — optional, only set if Xero's API asks for it.
+# in Xero. Uses the standard OAuth 2.0 flow (works in all regions — Custom
+# Connections are AU/NZ/UK/US-only): an admin clicks "Connect to Xero" on the
+# Users page once. Credentials come from env vars (never store them here):
+#   XERO_CLIENT_ID, XERO_CLIENT_SECRET — from a "Web app" at
+#   developer.xero.com/myapps (NOT a Custom connection).
+#   XERO_REDIRECT_URI — this deployment's own URL, exactly as registered in
+#   the Xero app's redirect URIs (defaults to http://localhost:8501/).
 # ---------------------------------------------------------------------
 xero:
   enabled: true
