@@ -122,12 +122,12 @@ taxonomy:
 # Example for Gmail: smtp_host smtp.gmail.com, port 587, use an App Password.
 # ---------------------------------------------------------------------
 email:
-  enabled: false
-  smtp_host: ""
+  enabled: true
+  smtp_host: "smtp.gmail.com"
   smtp_port: 587
   smtp_user: ""          # defaults to from_addr if blank
-  from_addr: ""
-  to_addrs: []           # billing / management recipients, e.g. ["billing@tcf.com"]
+  from_addr: "tokyoconsultingfirmphilbranch@gmail.com"
+  to_addrs: ["tokyoconsultingfirmphilbranch@gmail.com"]  # billing/management broadcast list
 
 # ---------------------------------------------------------------------
 # 6. GENERAL
